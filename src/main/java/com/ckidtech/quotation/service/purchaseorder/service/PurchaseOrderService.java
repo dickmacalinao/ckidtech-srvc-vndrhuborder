@@ -2,7 +2,7 @@ package com.ckidtech.quotation.service.purchaseorder.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -92,7 +92,7 @@ public class PurchaseOrderService {
 			if (quotation.getMessages().isEmpty()) { 
 
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");					
-				po.setId(po.getVendorId() + "-" + po.getUserId() + "-" + LocalDateTime.now().format(formatter));
+				po.setId(po.getVendorId() + "-" + LocalDateTime.now().format(formatter));
 				
 				po.setStatus(PurchaseOrder.Status.New);		
 				po.setOrderDate(LocalDateTime.now());
@@ -201,21 +201,15 @@ public class PurchaseOrderService {
 				
 				// Retrieve the order from previous and if exists
 				if ( poRep.getOrders() == null ) {
-					poRep.setOrders(new ArrayList<Order>());
-				} else {
-					
-					for ( Order orderInd : poRep.getOrders() ) {
-						if ( orderInd.getProductId().equals(order.getProductId()) ) {
-							orderRep = orderInd;
-						}
-					}
-					
+					poRep.setOrders(new HashMap<String, Order>());
+				} else {					
+					orderRep = poRep.getOrders().get(order.getProductId());
 				}
 								
 				if ( orderRep==null ) {
 					order.setAmountDue(prod.getProdComp().getComputedAmount() * order.getQuantity());	// Compute the Amount Due
 					Util.initalizeUpdatedInfo(poRep, String.format(msgController.getMsg("info.POAO"), order.toString()));
-					poRep.getOrders().add(order);
+					poRep.getOrders().put(order.getProductId(), order);
 				} else {
 					orderRep.setQuantity(order.getQuantity());
 					orderRep.setAmountDue(prod.getProdComp().getComputedAmount() * order.getQuantity()); // Compute the Amount Due
@@ -263,22 +257,16 @@ public class PurchaseOrderService {
 				
 				// Retrieve the order from previous and if exists
 				if ( poRep.getOrders() == null ) {
-					poRep.setOrders(new ArrayList<Order>());
+					poRep.setOrders(new HashMap<String, Order>());
 				} else {
-					
-					for ( Order orderInd : poRep.getOrders() ) {
-						if ( orderInd.getProductId().equals(productId) ) {
-							orderRep = orderInd;
-						}
-					}
-					
+					orderRep = poRep.getOrders().get(productId);	
 				}
 								
 				if ( orderRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
 					Util.initalizeUpdatedInfo(poRep, String.format(msgController.getMsg("info.PORO"), orderRep.toString()));					
-					poRep.getOrders().remove(orderRep);
+					poRep.getOrders().remove(productId);
 					purchaseOrderRepository.save(poRep);
 				}	
 								
