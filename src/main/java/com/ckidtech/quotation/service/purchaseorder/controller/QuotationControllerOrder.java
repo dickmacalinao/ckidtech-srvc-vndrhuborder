@@ -2,6 +2,7 @@ package com.ckidtech.quotation.service.purchaseorder.controller;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ckidtech.quotation.service.core.controller.QuotationResponse;
+import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.Order;
 import com.ckidtech.quotation.service.core.model.PurchaseOrder;
 import com.ckidtech.quotation.service.purchaseorder.service.PurchaseOrderService;
@@ -41,6 +44,25 @@ public class QuotationControllerOrder {
 		
 		return new ResponseEntity<Object>(purchaseOrderService.getVendorPurchaseOrder(vendorId, dFrom, dTo), HttpStatus.OK);		
 	}
+	
+	@RequestMapping(value = "/purchaseorder/vendor/getpochart")
+	public ResponseEntity<Object> getVendorPurchaseOrder(
+			@RequestBody ChartRequest chartReq) {		
+		LOG.log(Level.INFO, "Calling API /purchaseorder/vendor/getpochart/");		
+		return new ResponseEntity<Object>(purchaseOrderService.getPOChart(chartReq), HttpStatus.OK);		
+	}
+	
+	// For testing purposes
+	@RequestMapping(value = "/purchaseorder/vendor/createmultiplewpurchaseorders", method = RequestMethod.POST)
+	public ResponseEntity<Object> createNewPurchaseOrder(@RequestBody PurchaseOrder[] pos) {
+		LOG.log(Level.INFO, "Calling API /purchaseorder/vendor/createmultiplewpurchaseorders");
+		ArrayList<QuotationResponse> quotations = new ArrayList<QuotationResponse>();  
+		for( PurchaseOrder po : pos ) {
+			quotations.add(purchaseOrderService.createNewPurchaseOrder(po));
+			
+		}
+		return new ResponseEntity<Object>(quotations, HttpStatus.CREATED);		
+	}
 
 	@RequestMapping(value = "/purchaseorder/user/getpurchaseorderfortheday/{vendorId}/{userId}/{currDate}")
 	public ResponseEntity<Object> getUserPurchaseOrderForTheDay(
@@ -60,7 +82,8 @@ public class QuotationControllerOrder {
 	public ResponseEntity<Object> createNewPurchaseOrder(@RequestBody PurchaseOrder po) {
 		LOG.log(Level.INFO, "Calling API /purchaseorder/user/createnewpurchaseorder");
 		return new ResponseEntity<Object>(purchaseOrderService.createNewPurchaseOrder(po), HttpStatus.CREATED);		
-	}
+	}	
+
 
 	@RequestMapping(value = "/purchaseorder/user/updatepurchaseorder", method = RequestMethod.POST)
 	public ResponseEntity<Object> updatePurchaseOrder(@RequestBody PurchaseOrder po) {		

@@ -2,6 +2,7 @@ package com.ckidtech.quotation.service.purchaseorder.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -22,6 +23,9 @@ import com.ckidtech.quotation.service.core.dao.ProductRepository;
 import com.ckidtech.quotation.service.core.dao.PurchaseOrderRepository;
 import com.ckidtech.quotation.service.core.dao.VendorRepository;
 import com.ckidtech.quotation.service.core.model.AppUser;
+import com.ckidtech.quotation.service.core.model.ChartRequest;
+import com.ckidtech.quotation.service.core.model.ChartResponse;
+import com.ckidtech.quotation.service.core.model.DatasetItem;
 import com.ckidtech.quotation.service.core.model.Order;
 import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.PurchaseOrder;
@@ -53,7 +57,7 @@ public class PurchaseOrderService {
 	public List<PurchaseOrder> getVendorPurchaseOrder(String vendorId, LocalDateTime dateFrom, LocalDateTime dateTo) {
 		LOG.log(Level.INFO, "Calling Purchase Order Service getUserPurchaseOrderForTheDay()");
 		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
-		return purchaseOrderRepository.findByVendor(vendorId, dateFrom, dateTo, pageable);	
+		return purchaseOrderRepository.findByVendorAndRange(vendorId, dateFrom, dateTo, pageable);	
 	}
 	
 	public List<PurchaseOrder> getUserPurchaseOrderForTheDay(String vendorId, String userId, LocalDateTime dateFrom, LocalDateTime dateTo) {
@@ -74,6 +78,8 @@ public class PurchaseOrderService {
 			quotation.addMessage(msgController.createMsg("error.MFE", "Vendor ID"));
 		if (po.getUserId()== null || "".equals(po.getUserId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "User ID"));
+		if (po.getOrderDate()== null || "".equals(po.getOrderDate()))
+			quotation.addMessage(msgController.createMsg("error.MFE", "Order Date"));
 		
 		if (quotation.getMessages().isEmpty()) {
 			
@@ -95,7 +101,6 @@ public class PurchaseOrderService {
 				po.setId(po.getVendorId() + "-" + LocalDateTime.now().format(formatter));
 				
 				po.setStatus(PurchaseOrder.Status.New);		
-				po.setOrderDate(LocalDateTime.now());
 				po.setActiveIndicator(true);
 				Util.initalizeCreatedInfo(po, msgController.getMsg("info.PORC"));	
 				purchaseOrderRepository.save(po);
@@ -118,10 +123,12 @@ public class PurchaseOrderService {
 			quotation.addMessage(msgController.createMsg("error.MFE", "Purchase Order ID"));
 		if (po.getReferenceOrder() == null || "".equals(po.getReferenceOrder()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Reference Order"));
-		if (po.getVendorId()== null || "".equals(po.getVendorId()))
-			quotation.addMessage(msgController.createMsg("error.MFE", "Vendor ID"));
 		if (po.getUserId()== null || "".equals(po.getUserId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "User ID"));
+		if (po.getStatus()== null )
+			quotation.addMessage(msgController.createMsg("error.MFE", "Status"));
+		if (po.getOrderDate()== null )
+			quotation.addMessage(msgController.createMsg("error.MFE", "Order Date"));
 		
 		if (quotation.getMessages().isEmpty()) {
 			
@@ -146,9 +153,10 @@ public class PurchaseOrderService {
 			if (quotation.getMessages().isEmpty()) { 
 					
 				Util.initalizeUpdatedInfo(poRep, poRep.getDifferences(po));		
-				poRep.setStatus(po.getStatus());	
-				poRep.setReferenceOrder(po.getReferenceOrder());	
-				poRep.setActiveIndicator(po.isActiveIndicator());
+				poRep.setReferenceOrder(po.getReferenceOrder());
+				poRep.setUserId(po.getUserId());
+				poRep.setStatus(po.getStatus());
+				poRep.setOrderDate(po.getOrderDate());					
 				purchaseOrderRepository.save(poRep);
 				
 				quotation.setPurchaseOrder(poRep);
@@ -279,4 +287,102 @@ public class PurchaseOrderService {
 		
 	}
 	
+	public ChartResponse getPOChart(ChartRequest chartRequest) {
+		ChartResponse chart = new ChartResponse();
+		
+		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
+		List<PurchaseOrder> pos = purchaseOrderRepository.findByVendor(chartRequest.getVendorId(), pageable);
+		List<String> labels = getChartLabels(chartRequest, pos);
+		
+		List<DatasetItem> datasets = new ArrayList<DatasetItem>();
+		
+		datasets.add(getDataSetItem(chartRequest, pos, labels));
+		
+		chart.setLabels(labels);
+		chart.setDatasets(datasets);
+		
+		return chart;		
+	}
+	
+	private List<String> getChartLabels(ChartRequest chartRequest, List<PurchaseOrder> pos) {
+		ArrayList<String> labels = new ArrayList<String>();
+		LocalDateTime startRecOrderDate = null;
+		LocalDateTime endRecOrderDate = null;
+		LocalDateTime runningDate = null;
+		
+		DateTimeFormatter formatter = null;
+		
+		if ( pos.size() > 0 ) {
+			startRecOrderDate = pos.get(0).getOrderDate();
+			endRecOrderDate = pos.get(pos.size()-1).getOrderDate();
+		}
+		
+		if ( startRecOrderDate!=null && endRecOrderDate!=null ) {
+			
+			int startRange = 0;
+			int endRange = 0;
+						
+			if ( ChartRequest.LabelBy.Yearly.equals(chartRequest.getLabelBy()) ) {
+				formatter = DateTimeFormatter.ofPattern("yyyy");
+			} else if ( ChartRequest.LabelBy.Monthly.equals(chartRequest.getLabelBy()) ) {	
+				formatter = DateTimeFormatter.ofPattern("yyyyMM");
+			} else if ( ChartRequest.LabelBy.Daily.equals(chartRequest.getLabelBy()) ) {
+				formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+			}
+			
+			if ( formatter!=null ) {
+				startRange = Integer.valueOf(startRecOrderDate.format(formatter));
+				endRange = Integer.valueOf(endRecOrderDate.format(formatter));
+				runningDate = startRecOrderDate;
+				
+				for (int cnt = startRange; cnt <= endRange; ) {	
+					labels.add(String.valueOf(cnt));
+					
+					if ( ChartRequest.LabelBy.Monthly.equals(chartRequest.getLabelBy()) ) {
+						runningDate = runningDate.plusMonths(1);
+						cnt = Integer.valueOf(runningDate.format(formatter));
+					} else if ( ChartRequest.LabelBy.Daily.equals(chartRequest.getLabelBy()) ) {
+						runningDate = runningDate.plusDays(1);
+						cnt = Integer.valueOf(runningDate.format(formatter));
+					} else {
+						cnt++;
+					}					
+						
+				}
+				
+			}
+		}
+		
+		return labels;
+		
+	}
+	
+	private DatasetItem getDataSetItem(ChartRequest chartRequest, List<PurchaseOrder> pos, List<String> labels) {
+	
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+		
+		if ( ChartRequest.LabelBy.Yearly.equals(chartRequest.getLabelBy()) ) {
+			formatter = DateTimeFormatter.ofPattern("yyyy");
+		} else if ( ChartRequest.LabelBy.Monthly.equals(chartRequest.getLabelBy()) ) {	
+			formatter = DateTimeFormatter.ofPattern("yyyyMM");
+		} else if ( ChartRequest.LabelBy.Daily.equals(chartRequest.getLabelBy()) ) {
+			formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+		}
+		
+		Double summaryData = 0.0; 
+		
+		DatasetItem data = new DatasetItem();
+		
+		for ( String label : labels) {
+			summaryData = 0.0;
+			for ( PurchaseOrder po : pos ) {			
+				if ( label.equals(po.getOrderDate().format(formatter)) ) {
+					summaryData+= ( ChartRequest.ChartDataContent.ByCount.equals(chartRequest.getChartDataContent()) ? po.getTotalQuantity() : po.getTotalAmountDue() ); 
+				}
+			}
+			data.addData(summaryData);			
+		}		
+		
+		return data;		
+	}
 }
