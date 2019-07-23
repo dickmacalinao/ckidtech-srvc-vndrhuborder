@@ -1,4 +1,4 @@
-package com.ckidtech.quotation.service.purchaseorder;
+package com.ckidtech.quotation.service.order;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -9,18 +9,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 @RestController
-public class QuotationServicePurchaseOrderApp {
+public class QuotationServiceOrderApp {
 	
 	@Autowired
 	private Environment env;
 	
 	public static void main(String[] args) {
-		SpringApplication.run(QuotationServicePurchaseOrderApp.class, args);
+		SpringApplication.run(QuotationServiceOrderApp.class, args);
 	}
 
 	@RequestMapping("/")
 	public String index() {
-		return "Welcome to Quotation Purchase Order App Service at port " + env.getProperty("local.server.port") + ".";
+		return "Welcome to Quotation Order App Service at port " + env.getProperty("local.server.port") + ".";
 	}
 
 }

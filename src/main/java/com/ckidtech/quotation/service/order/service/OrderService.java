@@ -1,4 +1,4 @@
-package com.ckidtech.quotation.service.purchaseorder.service;
+package com.ckidtech.quotation.service.order.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,7 +35,7 @@ import com.ckidtech.quotation.service.core.utils.Util;
 @ComponentScan({"com.ckidtech.quotation.service.core.controller"})
 @EnableMongoRepositories ("com.ckidtech.quotation.service.core.dao")
 @Service
-public class PurchaseOrderService {
+public class OrderService {
 	
 	@Autowired
 	private PurchaseOrderRepository purchaseOrderRepository;
@@ -52,23 +52,23 @@ public class PurchaseOrderService {
 	@Autowired
 	private MessageController msgController;
 
-	private static final Logger LOG = Logger.getLogger(PurchaseOrderService.class.getName());
+	private static final Logger LOG = Logger.getLogger(OrderService.class.getName());
 	
-	public List<PurchaseOrder> getVendorPurchaseOrder(String vendorId, LocalDateTime dateFrom, LocalDateTime dateTo) {
-		LOG.log(Level.INFO, "Calling Purchase Order Service getUserPurchaseOrderForTheDay()");
+	public List<PurchaseOrder> getVendorOrder(String vendorId, LocalDateTime dateFrom, LocalDateTime dateTo) {
+		LOG.log(Level.INFO, "Calling Order Service getVendorOrder()");
 		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
 		return purchaseOrderRepository.findByVendorAndRange(vendorId, dateFrom, dateTo, pageable);	
 	}
 	
-	public List<PurchaseOrder> getUserPurchaseOrderForTheDay(String vendorId, String userId, LocalDateTime dateFrom, LocalDateTime dateTo) {
-		LOG.log(Level.INFO, "Calling Purchase Order Service getUserPurchaseOrderForTheDay()");
+	public List<PurchaseOrder> getUserOrderForTheDay(String vendorId, String userId, LocalDateTime dateFrom, LocalDateTime dateTo) {
+		LOG.log(Level.INFO, "Calling Order Service getUserOrderForTheDay()");
 		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
 		return purchaseOrderRepository.findByVendorAndUser(vendorId, userId, dateFrom, dateTo, pageable);	
 	}
 	
-	public QuotationResponse createNewPurchaseOrder(PurchaseOrder po) {
+	public QuotationResponse createNewOrder(PurchaseOrder po) {
 		
-		LOG.log(Level.INFO, "Calling Purchase Order Service updatePurchaseOrder()");
+		LOG.log(Level.INFO, "Calling Order Service createNewOrder()");
 
 		QuotationResponse quotation = new QuotationResponse();		
 		
@@ -113,9 +113,9 @@ public class PurchaseOrderService {
 		
 	}
 
-	public QuotationResponse updatePurchaseOrder(PurchaseOrder po) {
+	public QuotationResponse updateOrder(PurchaseOrder po) {
 		
-		LOG.log(Level.INFO, "Calling Purchase Order Service updatePurchaseOrder()");
+		LOG.log(Level.INFO, "Calling Order Service updateOrder()");
 
 		QuotationResponse quotation = new QuotationResponse();
 		
@@ -170,7 +170,7 @@ public class PurchaseOrderService {
 	
 	public QuotationResponse addToOrderList(String poID, Order order) {
 		
-		LOG.log(Level.INFO, "Calling Purchase Order Service addOrder()");
+		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
 
 		QuotationResponse quotation = new QuotationResponse();
 		
@@ -236,7 +236,7 @@ public class PurchaseOrderService {
 	
 	public QuotationResponse removeFromOrderList(String poID, String productId) {
 		
-		LOG.log(Level.INFO, "Calling Purchase Order Service addOrder()");
+		LOG.log(Level.INFO, "Calling Order Service removeFromOrderList()");
 
 		QuotationResponse quotation = new QuotationResponse();
 		
