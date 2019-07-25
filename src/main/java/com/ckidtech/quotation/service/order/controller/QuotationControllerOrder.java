@@ -19,7 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ckidtech.quotation.service.core.controller.QuotationResponse;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.Order;
-import com.ckidtech.quotation.service.core.model.PurchaseOrder;
+import com.ckidtech.quotation.service.core.model.OrderItem;
+import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.order.service.OrderService;
 
 @ComponentScan({"com.ckidtech.quotation.service.core.service"})
@@ -31,34 +32,28 @@ public class QuotationControllerOrder {
 	@Autowired
 	private OrderService OrderService;
 		
-	@RequestMapping(value = "/vendor/getorder/{vendorId}/{dateFrom}/{dateTo}")
+	@RequestMapping(value = "/vendor/getorder")
 	public ResponseEntity<Object> getVendorPurchaseOrder(
-			@PathVariable("vendorId") String vendorId,
-			@PathVariable("dateFrom") String dateFrom, 
-			@PathVariable("dateTo") String dateTo) {		
-		LOG.log(Level.INFO, "Calling API /vendor/getorder/" + vendorId + "/" + dateFrom + "/" + dateTo);
-		
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-		LocalDateTime dFrom = LocalDateTime.parse(dateFrom + " 00:00:00", formatter);
-		LocalDateTime dTo = LocalDateTime.parse(dateTo + " 23:59:59", formatter);
-		
-		return new ResponseEntity<Object>(OrderService.getVendorOrder(vendorId, dFrom, dTo), HttpStatus.OK);		
+			@RequestBody OrderSearchCriteria orderSearchCriteria) {		
+		LOG.log(Level.INFO, "Calling API /vendor/getorder/" + orderSearchCriteria.toString());
+				
+		return new ResponseEntity<Object>(OrderService.getVendorOrder(orderSearchCriteria), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/vendor/getpochart")
-	public ResponseEntity<Object> getVendorPurchaseOrder(
+	@RequestMapping(value = "/vendor/getorderchart")
+	public ResponseEntity<Object> geOrderChart(
 			@RequestBody ChartRequest chartReq) {		
-		LOG.log(Level.INFO, "Calling API /vendor/getpochart/");		
-		return new ResponseEntity<Object>(OrderService.getPOChart(chartReq), HttpStatus.OK);		
+		LOG.log(Level.INFO, "Calling API /vendor/getorderchart/");		
+		return new ResponseEntity<Object>(OrderService.getOrderChart(chartReq), HttpStatus.OK);		
 	}
 	
 	// For testing purposes
-	@RequestMapping(value = "/vendor/createmultiplewpurchaseorders", method = RequestMethod.POST)
-	public ResponseEntity<Object> createNewPurchaseOrder(@RequestBody PurchaseOrder[] pos) {
-		LOG.log(Level.INFO, "Calling API /vendor/createmultiplewpurchaseorders");
+	@RequestMapping(value = "/vendor/createmultipleorders", method = RequestMethod.POST)
+	public ResponseEntity<Object> createNewOrders(@RequestBody Order[] orders) {
+		LOG.log(Level.INFO, "Calling API /vendor/createmultipleorders");
 		ArrayList<QuotationResponse> quotations = new ArrayList<QuotationResponse>();  
-		for( PurchaseOrder po : pos ) {
-			quotations.add(OrderService.createNewOrder(po));
+		for( Order order : orders ) {
+			quotations.add(OrderService.createNewOrder(order));
 			
 		}
 		return new ResponseEntity<Object>(quotations, HttpStatus.CREATED);		
@@ -78,25 +73,25 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(OrderService.getUserOrderForTheDay(vendorId, userId, dFrom, dTo), HttpStatus.OK);		
 	}
 
-	@RequestMapping(value = "/user/createneorder", method = RequestMethod.POST)
-	public ResponseEntity<Object> createNewPurchaseOrder(@RequestBody PurchaseOrder po) {
-		LOG.log(Level.INFO, "Calling API /user/createneorder");
-		return new ResponseEntity<Object>(OrderService.createNewOrder(po), HttpStatus.CREATED);		
+	@RequestMapping(value = "/user/createneworder", method = RequestMethod.POST)
+	public ResponseEntity<Object> createNewOrder(@RequestBody Order order) {
+		LOG.log(Level.INFO, "Calling API /user/createneworder");
+		return new ResponseEntity<Object>(OrderService.createNewOrder(order), HttpStatus.CREATED);		
 	}	
 
 
 	@RequestMapping(value = "/user/updateorder", method = RequestMethod.POST)
-	public ResponseEntity<Object> updatePurchaseOrder(@RequestBody PurchaseOrder po) {		
+	public ResponseEntity<Object> updateOrder(@RequestBody Order order) {		
 		LOG.log(Level.INFO, "Calling API /user/updateorder");
-		return new ResponseEntity<Object>(OrderService.updateOrder(po), HttpStatus.OK);		
+		return new ResponseEntity<Object>(OrderService.updateOrder(order), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/user/addtoorderlist/{poId}", method = RequestMethod.POST)
+	@RequestMapping(value = "/user/addtoorderitem/{orderID}", method = RequestMethod.POST)
 	public ResponseEntity<Object> addToOrderList(
-			@PathVariable("poId") String poId, 
-			@RequestBody Order order) {		
-		LOG.log(Level.INFO, "Calling API /user/addtoorderlist/" + poId);
-		return new ResponseEntity<Object>(OrderService.addToOrderList(poId, order), HttpStatus.OK);		
+			@PathVariable("orderID") String orderID, 
+			@RequestBody OrderItem orderItem) {		
+		LOG.log(Level.INFO, "Calling API /user/addtoorderitem/" + orderID);
+		return new ResponseEntity<Object>(OrderService.addOrderItem(orderID, orderItem), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/user/removefromorderlist/{poID}/{productId}")

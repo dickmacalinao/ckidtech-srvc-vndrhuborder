@@ -2,6 +2,7 @@ package com.ckidtech.quotation.service.order.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,16 +20,17 @@ import org.springframework.stereotype.Service;
 import com.ckidtech.quotation.service.core.controller.MessageController;
 import com.ckidtech.quotation.service.core.controller.QuotationResponse;
 import com.ckidtech.quotation.service.core.dao.AppUserRepository;
+import com.ckidtech.quotation.service.core.dao.OrderRepository;
 import com.ckidtech.quotation.service.core.dao.ProductRepository;
-import com.ckidtech.quotation.service.core.dao.PurchaseOrderRepository;
 import com.ckidtech.quotation.service.core.dao.VendorRepository;
 import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.ChartResponse;
 import com.ckidtech.quotation.service.core.model.DatasetItem;
 import com.ckidtech.quotation.service.core.model.Order;
+import com.ckidtech.quotation.service.core.model.OrderItem;
+import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.model.Product;
-import com.ckidtech.quotation.service.core.model.PurchaseOrder;
 import com.ckidtech.quotation.service.core.model.Vendor;
 import com.ckidtech.quotation.service.core.utils.Util;
 
@@ -38,7 +40,7 @@ import com.ckidtech.quotation.service.core.utils.Util;
 public class OrderService {
 	
 	@Autowired
-	private PurchaseOrderRepository purchaseOrderRepository;
+	private OrderRepository orderRepository;
 	
 	@Autowired
 	private AppUserRepository appUserRepository;
@@ -54,42 +56,74 @@ public class OrderService {
 
 	private static final Logger LOG = Logger.getLogger(OrderService.class.getName());
 	
-	public List<PurchaseOrder> getVendorOrder(String vendorId, LocalDateTime dateFrom, LocalDateTime dateTo) {
+	public QuotationResponse getVendorOrder(OrderSearchCriteria orderSearchCriteria) {
 		LOG.log(Level.INFO, "Calling Order Service getVendorOrder()");
-		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
-		return purchaseOrderRepository.findByVendorAndRange(vendorId, dateFrom, dateTo, pageable);	
+		
+		QuotationResponse quotation = new QuotationResponse();
+		
+		if (orderSearchCriteria.getVendorId() == null || "".equals(orderSearchCriteria.getVendorId()))
+			quotation.addMessage(msgController.createMsg("error.MFE", "Vendor ID"));
+		if (orderSearchCriteria.getDateFrom() == null)
+			quotation.addMessage(msgController.createMsg("error.MFE", "Date From"));
+		if (orderSearchCriteria.getDateTo() == null)
+			quotation.addMessage(msgController.createMsg("error.MFE", "Date To"));
+		
+		if ( quotation.getMessages().isEmpty() ) {
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+			
+			LocalDateTime dateFrom = LocalDateTime.parse(orderSearchCriteria.getDateFrom() + " 00:00:00", formatter);
+			LocalDateTime dateTo = LocalDateTime.parse(orderSearchCriteria.getDateTo() + " 23:59:59", formatter);
+			
+			Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
+			
+			if ( orderSearchCriteria.getStatus()!=null && !"".equals(orderSearchCriteria.getUserId()==null?"":orderSearchCriteria.getUserId()) ) {
+				quotation.setOrders(orderRepository.findVendorOrderByStatusAndUser(orderSearchCriteria.getVendorId(), 
+						dateFrom, dateTo, orderSearchCriteria.getStatus(), orderSearchCriteria.getUserId(), pageable));
+			} else if ( orderSearchCriteria.getStatus()!=null ) {
+				quotation.setOrders(orderRepository.findVendorOrderByStatus(orderSearchCriteria.getVendorId(), 
+						dateFrom, dateTo, orderSearchCriteria.getStatus(), pageable));
+			} else if ( !"".equals(orderSearchCriteria.getUserId()==null?"":orderSearchCriteria.getUserId()) ) {
+				quotation.setOrders(orderRepository.findVendorOrderByUser(orderSearchCriteria.getVendorId(), 
+						dateFrom, dateTo, orderSearchCriteria.getUserId(), pageable));
+			} else {	
+				quotation.setOrders(orderRepository.findVendorOrder(orderSearchCriteria.getVendorId(), dateFrom, dateTo, pageable));
+			}		
+			
+		}
+				
+		return quotation;
 	}
 	
-	public List<PurchaseOrder> getUserOrderForTheDay(String vendorId, String userId, LocalDateTime dateFrom, LocalDateTime dateTo) {
+	public List<Order> getUserOrderForTheDay(String vendorId, String userId, LocalDateTime dateFrom, LocalDateTime dateTo) {
 		LOG.log(Level.INFO, "Calling Order Service getUserOrderForTheDay()");
 		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
-		return purchaseOrderRepository.findByVendorAndUser(vendorId, userId, dateFrom, dateTo, pageable);	
+		return orderRepository.findUserOrder(vendorId, userId, dateFrom, dateTo, pageable);	
 	}
 	
-	public QuotationResponse createNewOrder(PurchaseOrder po) {
+	public QuotationResponse createNewOrder(Order order) {
 		
 		LOG.log(Level.INFO, "Calling Order Service createNewOrder()");
 
 		QuotationResponse quotation = new QuotationResponse();		
 		
-		if (po.getReferenceOrder() == null || "".equals(po.getReferenceOrder()))
+		if (order.getReferenceOrder() == null || "".equals(order.getReferenceOrder()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Reference Order"));
-		if (po.getVendorId()== null || "".equals(po.getVendorId()))
+		if (order.getVendorId()== null || "".equals(order.getVendorId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Vendor ID"));
-		if (po.getUserId()== null || "".equals(po.getUserId()))
+		if (order.getUserId()== null || "".equals(order.getUserId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "User ID"));
-		if (po.getOrderDate()== null || "".equals(po.getOrderDate()))
+		if (order.getOrderDate()== null)
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order Date"));
 		
 		if (quotation.getMessages().isEmpty()) {
 			
-			Vendor vendorRep = vendorRepository.findById(po.getVendorId().toUpperCase()).orElse(null);			
+			Vendor vendorRep = vendorRepository.findById(order.getVendorId().toUpperCase()).orElse(null);			
 			// Verify if Vendor exists and active
 			if (vendorRep==null || !vendorRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.VNFE"));
 			}
 				
-			AppUser appUserRep = appUserRepository.findById(po.getUserId()).orElse(null);			
+			AppUser appUserRep = appUserRepository.findById(order.getUserId()).orElse(null);			
 			// Verify if App User exists and active
 			if  ( appUserRep==null || !appUserRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.AUNFE"));
@@ -98,14 +132,14 @@ public class OrderService {
 			if (quotation.getMessages().isEmpty()) { 
 
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");					
-				po.setId(po.getVendorId() + "-" + LocalDateTime.now().format(formatter));
+				order.setId(order.getVendorId() + "-" + LocalDateTime.now().format(formatter));
 				
-				po.setStatus(PurchaseOrder.Status.New);		
-				po.setActiveIndicator(true);
-				Util.initalizeCreatedInfo(po, msgController.getMsg("info.PORC"));	
-				purchaseOrderRepository.save(po);
+				order.setStatus(Order.Status.New);		
+				order.setActiveIndicator(true);
+				Util.initalizeCreatedInfo(order, msgController.getMsg("info.PORC"));	
+				orderRepository.save(order);
 				
-				quotation.setPurchaseOrder(po);
+				quotation.setOrder(order);
 			}
 		}		
 		
@@ -113,53 +147,53 @@ public class OrderService {
 		
 	}
 
-	public QuotationResponse updateOrder(PurchaseOrder po) {
+	public QuotationResponse updateOrder(Order order) {
 		
 		LOG.log(Level.INFO, "Calling Order Service updateOrder()");
 
 		QuotationResponse quotation = new QuotationResponse();
 		
-		if (po.getId() == null || "".equals(po.getId()))
+		if (order.getId() == null || "".equals(order.getId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Purchase Order ID"));
-		if (po.getReferenceOrder() == null || "".equals(po.getReferenceOrder()))
+		if (order.getReferenceOrder() == null || "".equals(order.getReferenceOrder()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Reference Order"));
-		if (po.getUserId()== null || "".equals(po.getUserId()))
+		if (order.getUserId()== null || "".equals(order.getUserId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "User ID"));
-		if (po.getStatus()== null )
+		if (order.getStatus()== null )
 			quotation.addMessage(msgController.createMsg("error.MFE", "Status"));
-		if (po.getOrderDate()== null )
+		if (order.getOrderDate()== null )
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order Date"));
 		
 		if (quotation.getMessages().isEmpty()) {
 			
-			Vendor vendorRep = vendorRepository.findById(po.getVendorId().toUpperCase()).orElse(null);			
+			Vendor vendorRep = vendorRepository.findById(order.getVendorId().toUpperCase()).orElse(null);			
 			// Verify if Vendor exists and active
 			if (vendorRep==null || !vendorRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.VNFE"));
 			}
 				
-			AppUser appUserRep = appUserRepository.findById(po.getUserId()).orElse(null);			
+			AppUser appUserRep = appUserRepository.findById(order.getUserId()).orElse(null);			
 			// Verify if App User exists and active
 			if  ( appUserRep==null || !appUserRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.AUNFE"));
 			} 
 			
-			PurchaseOrder poRep = purchaseOrderRepository.findById(po.getId()).orElse(null);
+			Order orderRep = orderRepository.findById(order.getId()).orElse(null);
 			// Verify if Purchase order exists and active
-			if  ( poRep==null || !poRep.isActiveIndicator() ) {
+			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
 					
-				Util.initalizeUpdatedInfo(poRep, poRep.getDifferences(po));		
-				poRep.setReferenceOrder(po.getReferenceOrder());
-				poRep.setUserId(po.getUserId());
-				poRep.setStatus(po.getStatus());
-				poRep.setOrderDate(po.getOrderDate());					
-				purchaseOrderRepository.save(poRep);
+				Util.initalizeUpdatedInfo(orderRep, orderRep.getDifferences(order));		
+				orderRep.setReferenceOrder(order.getReferenceOrder());
+				orderRep.setUserId(order.getUserId());
+				orderRep.setStatus(order.getStatus());
+				orderRep.setOrderDate(order.getOrderDate());					
+				orderRepository.save(orderRep);
 				
-				quotation.setPurchaseOrder(poRep);
+				quotation.setOrder(orderRep);
 				
 			}
 		}		
@@ -168,36 +202,36 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse addToOrderList(String poID, Order order) {
+	public QuotationResponse addOrderItem(String orderID, OrderItem orderItem) {
 		
 		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
 
 		QuotationResponse quotation = new QuotationResponse();
 		
-		if (poID == null || "".equals(poID))
+		if (orderID == null || "".equals(orderID))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Purchase Order ID"));
-		if (order == null) {
-			quotation.addMessage(msgController.createMsg("error.MFE", "Order"));
+		if (orderItem == null) {
+			quotation.addMessage(msgController.createMsg("error.MFE", "Order Item"));
 		} else {
-			if ( order.getProductId()==null || "".equals(order.getProductId()) ) 
+			if ( orderItem.getProductId()==null || "".equals(orderItem.getProductId()) ) 
 				quotation.addMessage(msgController.createMsg("error.MFE", "Product ID"));			
 		}
 		
 		if (quotation.getMessages().isEmpty()) {
 			
-			PurchaseOrder poRep = purchaseOrderRepository.findById(poID).orElse(null);
+			Order orderRep = orderRepository.findById(orderID).orElse(null);
 			// Verify if Purchase order exists and active
-			if  ( poRep==null || !poRep.isActiveIndicator() ) {
+			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			} else {
 				
-				// Only status New or Ordering can add oder to list				
-				if ( !poRep.getStatus().equals(PurchaseOrder.Status.New) && !poRep.getStatus().equals(PurchaseOrder.Status.Ordering) ) {
+				// Only status New or Ordered can add oder to list				
+				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
 					quotation.addMessage(msgController.createMsg("error.POUNAE"));
 				}
 			}
 			
-			Product prod = productRepository.findById(order.getProductId()).orElse(null);
+			Product prod = productRepository.findById(orderItem.getProductId()).orElse(null);
 			// Verify if Product exists and active
 			if  ( prod==null || !prod.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.VPNFE"));
@@ -205,27 +239,28 @@ public class OrderService {
 			
 			if (quotation.getMessages().isEmpty()) { 
 				
-				Order orderRep = null;
+				OrderItem orderItemRep = null;
 				
-				// Retrieve the order from previous and if exists
-				if ( poRep.getOrders() == null ) {
-					poRep.setOrders(new HashMap<String, Order>());
+				// Retrieve the order item from previous and if exists, otherwise initialize
+				if ( orderRep.getOrders() == null ) {
+					orderRep.setOrders(new HashMap<String, OrderItem>());
 				} else {					
-					orderRep = poRep.getOrders().get(order.getProductId());
+					orderItemRep = orderRep.getOrders().get(orderItem.getProductId());
 				}
-								
-				if ( orderRep==null ) {
-					order.setAmountDue(prod.getProdComp().getComputedAmount() * order.getQuantity());	// Compute the Amount Due
-					Util.initalizeUpdatedInfo(poRep, String.format(msgController.getMsg("info.POAO"), order.toString()));
-					poRep.getOrders().put(order.getProductId(), order);
+				
+				// If order item is not exists, add otherwise update existing
+				if ( orderItemRep==null ) {
+					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
+					Util.initalizeUpdatedInfo(orderRep, String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
+					orderRep.getOrders().put(orderItem.getProductId(), orderItem);
 				} else {
-					orderRep.setQuantity(order.getQuantity());
-					orderRep.setAmountDue(prod.getProdComp().getComputedAmount() * order.getQuantity()); // Compute the Amount Due
-					Util.initalizeUpdatedInfo(poRep, String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
+					orderItemRep.setQuantity(orderItem.getQuantity());
+					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
+					Util.initalizeUpdatedInfo(orderRep, String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 				}
 					
-				purchaseOrderRepository.save(poRep);				
-				quotation.setPurchaseOrder(poRep);
+				orderRepository.save(orderRep);				
+				quotation.setOrder(orderRep);
 				
 			}
 		}		
@@ -234,51 +269,51 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse removeFromOrderList(String poID, String productId) {
+	public QuotationResponse removeFromOrderList(String orderID, String productId) {
 		
 		LOG.log(Level.INFO, "Calling Order Service removeFromOrderList()");
 
 		QuotationResponse quotation = new QuotationResponse();
 		
-		if (poID == null || "".equals(poID))
+		if (orderID == null || "".equals(orderID))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Purchase Order ID"));	
 		if ( productId==null || "".equals(productId) ) 
 			quotation.addMessage(msgController.createMsg("error.MFE", "Product ID"));			
 		
 		if (quotation.getMessages().isEmpty()) {
 			
-			PurchaseOrder poRep = purchaseOrderRepository.findById(poID).orElse(null);
+			Order orderRep = orderRepository.findById(orderID).orElse(null);
 			// Verify if Purchase order exists and active
-			if  ( poRep==null || !poRep.isActiveIndicator() ) {
+			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			} else {
 				
-				// Only status New or Ordering can remove oder from list				
-				if ( !poRep.getStatus().equals(PurchaseOrder.Status.New) && !poRep.getStatus().equals(PurchaseOrder.Status.Ordering) ) {
+				// Only status New or Ordered can remove oder from list				
+				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
 					quotation.addMessage(msgController.createMsg("error.POUNAE"));
 				}
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
 				
-				Order orderRep = null;
+				OrderItem orderItemRep = null;
 				
 				// Retrieve the order from previous and if exists
-				if ( poRep.getOrders() == null ) {
-					poRep.setOrders(new HashMap<String, Order>());
+				if ( orderRep.getOrders() == null ) {
+					orderRep.setOrders(new HashMap<String, OrderItem>());
 				} else {
-					orderRep = poRep.getOrders().get(productId);	
+					orderItemRep = orderRep.getOrders().get(productId);	
 				}
 								
-				if ( orderRep==null ) {
+				if ( orderItemRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
-					Util.initalizeUpdatedInfo(poRep, String.format(msgController.getMsg("info.PORO"), orderRep.toString()));					
-					poRep.getOrders().remove(productId);
-					purchaseOrderRepository.save(poRep);
+					Util.initalizeUpdatedInfo(orderRep, String.format(msgController.getMsg("info.PORO"), orderRep.toString()));					
+					orderRep.getOrders().remove(productId);
+					orderRepository.save(orderRep);
 				}	
 								
-				quotation.setPurchaseOrder(poRep);
+				quotation.setOrder(orderRep);
 				
 			}
 		}		
@@ -287,37 +322,68 @@ public class OrderService {
 		
 	}
 	
-	public ChartResponse getPOChart(ChartRequest chartRequest) {
-		ChartResponse chart = new ChartResponse();
+	public ChartResponse getOrderChart(ChartRequest chartRequest) {
+		ChartResponse chartResponse = new ChartResponse();
 		
-		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
-		List<PurchaseOrder> pos = purchaseOrderRepository.findByVendor(chartRequest.getVendorId(), pageable);
-		List<String> labels = getChartLabels(chartRequest, pos);
+		if (chartRequest.getVendorId()==null || "".equals(chartRequest.getVendorId())) {
+			chartResponse.addMessage(msgController.createMsg("error.MFE", "Vendor ID"));
+		} else {
+			Vendor vendorRep = vendorRepository.findById(chartRequest.getVendorId().toUpperCase()).orElse(null);			
+			// Verify if Vendor exists and active
+			if (vendorRep==null || !vendorRep.isActiveIndicator() ) {
+				chartResponse.addMessage(msgController.createMsg("error.VNFE"));
+			}				
+		}
+		if ( chartRequest.getLabelBy()==null ) {
+			chartResponse.addMessage(msgController.createMsg("error.MFE", "Label By"));
+		}
+		if ( chartRequest.getDateFrom()==null ) {
+			chartResponse.addMessage(msgController.createMsg("error.MFE", "Date From"));
+		}
+		if ( chartRequest.getDateTo()==null ) {
+			chartResponse.addMessage(msgController.createMsg("error.MFE", "Date To"));
+		}
+		if (chartRequest.getStatus()==null ) {
+			chartResponse.addMessage(msgController.createMsg("error.MFE", "Status"));
+		}
 		
-		List<DatasetItem> datasets = new ArrayList<DatasetItem>();
+		if ( chartResponse.getMessages().isEmpty() ) {
+
+			List<String> labels = getChartLabels(chartRequest, chartResponse);
+			List<DatasetItem> datasets = new ArrayList<DatasetItem>();
+			
+			datasets.add(getDataSetItem(chartRequest, labels));
+			
+			chartResponse.setLabels(labels);
+			chartResponse.setDatasets(datasets);
+			
+		}		
 		
-		datasets.add(getDataSetItem(chartRequest, pos, labels));
-		
-		chart.setLabels(labels);
-		chart.setDatasets(datasets);
-		
-		return chart;		
+		return chartResponse;		
 	}
 	
-	private List<String> getChartLabels(ChartRequest chartRequest, List<PurchaseOrder> pos) {
+	private List<String> getChartLabels(ChartRequest chartRequest, ChartResponse chartResponse) {
 		ArrayList<String> labels = new ArrayList<String>();
+		
 		LocalDateTime startRecOrderDate = null;
 		LocalDateTime endRecOrderDate = null;
 		LocalDateTime runningDate = null;
 		
-		DateTimeFormatter formatter = null;
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 		
-		if ( pos.size() > 0 ) {
-			startRecOrderDate = pos.get(0).getOrderDate();
-			endRecOrderDate = pos.get(pos.size()-1).getOrderDate();
+		try {
+			startRecOrderDate = LocalDateTime.parse(chartRequest.getDateFrom() + " 00:00:00",formatter);
+		} catch (DateTimeParseException dtpe) {
+			chartResponse.addMessage(msgController.createMsg("error.IDFE", "yyyy-MM-dd", "Date From"));
 		}
 		
-		if ( startRecOrderDate!=null && endRecOrderDate!=null ) {
+		try {
+			endRecOrderDate = LocalDateTime.parse(chartRequest.getDateTo() + " 23:59:59",formatter);
+		} catch (DateTimeParseException dtpe) {
+			chartResponse.addMessage(msgController.createMsg("error.IDFE", "yyyy-MM-dd", "Date To"));
+		}
+		
+		if ( chartResponse.getMessages().isEmpty() ) {
 			
 			int startRange = 0;
 			int endRange = 0;
@@ -357,32 +423,40 @@ public class OrderService {
 		
 	}
 	
-	private DatasetItem getDataSetItem(ChartRequest chartRequest, List<PurchaseOrder> pos, List<String> labels) {
+	private DatasetItem getDataSetItem(ChartRequest chartRequest, List<String> labels) {
 	
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-		
-		if ( ChartRequest.LabelBy.Yearly.equals(chartRequest.getLabelBy()) ) {
-			formatter = DateTimeFormatter.ofPattern("yyyy");
-		} else if ( ChartRequest.LabelBy.Monthly.equals(chartRequest.getLabelBy()) ) {	
-			formatter = DateTimeFormatter.ofPattern("yyyyMM");
-		} else if ( ChartRequest.LabelBy.Daily.equals(chartRequest.getLabelBy()) ) {
-			formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-		}
-		
-		Double summaryData = 0.0; 
-		
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");		
 		DatasetItem data = new DatasetItem();
+		
+		Double summaryData = 0.0;
+		LocalDateTime dateFrom;
+		LocalDateTime dateTo;
 		
 		for ( String label : labels) {
 			summaryData = 0.0;
-			for ( PurchaseOrder po : pos ) {			
-				if ( label.equals(po.getOrderDate().format(formatter)) ) {
-					summaryData+= ( ChartRequest.ChartDataContent.ByCount.equals(chartRequest.getChartDataContent()) ? po.getTotalQuantity() : po.getTotalAmountDue() ); 
-				}
+			
+			if ( ChartRequest.LabelBy.Yearly.equals(chartRequest.getLabelBy()) ) {
+				dateFrom = LocalDateTime.parse(label + "0101 00:00:00", formatter);
+				dateTo = LocalDateTime.parse(label + "1231 23:59:59", formatter);
+			} else if ( ChartRequest.LabelBy.Monthly.equals(chartRequest.getLabelBy()) ) {
+				dateFrom = LocalDateTime.parse(label + "01 00:00:00", formatter);
+				dateTo = dateFrom.plusMonths(1).minusSeconds(1);
+			} else { // If Label By is Daily just loop for all Paid orders to get the summary
+				dateFrom = LocalDateTime.parse(label + " 00:00:00", formatter);
+				dateTo = LocalDateTime.parse(label + " 23:59:59", formatter);
+			}
+			
+			Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
+			List<Order> orders = orderRepository.findVendorOrderByStatus(chartRequest.getVendorId(), 
+					dateFrom, dateTo, chartRequest.getStatus().toString(), pageable);
+			
+			for ( Order order : orders ) {
+				summaryData+= ( ChartRequest.ChartDataContent.ByCount.equals(chartRequest.getChartDataContent()) ? order.getTotalQuantity() : order.getTotalAmountDue() );
 			}
 			data.addData(summaryData);			
 		}		
 		
 		return data;		
 	}
+	
 }
