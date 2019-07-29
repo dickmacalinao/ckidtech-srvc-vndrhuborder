@@ -23,6 +23,7 @@ import com.ckidtech.quotation.service.core.dao.AppUserRepository;
 import com.ckidtech.quotation.service.core.dao.OrderRepository;
 import com.ckidtech.quotation.service.core.dao.ProductRepository;
 import com.ckidtech.quotation.service.core.dao.VendorRepository;
+import com.ckidtech.quotation.service.core.exception.ServiceAccessResourceFailureException;
 import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.ChartResponse;
@@ -32,6 +33,7 @@ import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.Vendor;
+import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
 
 @ComponentScan({"com.ckidtech.quotation.service.core.controller"})
@@ -202,7 +204,7 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse addOrderItem(String orderID, OrderItem orderItem) {
+	public QuotationResponse addOrderItem(String vendorId, String orderID, OrderItem orderItem) {
 		
 		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
 
@@ -224,6 +226,11 @@ public class OrderService {
 			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			} else {
+				
+				// If Order is not under the same vendor throw error.
+				if ( vendorId!=null && !vendorId.equals(orderRep.getVendorId()) ) {
+					throw new ServiceAccessResourceFailureException();
+				}
 				
 				// Only status New or Ordered can add oder to list				
 				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
@@ -269,7 +276,7 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse removeFromOrderList(String orderID, String productId) {
+	public QuotationResponse removeFromOrderList(String vendorId, String orderID, String productId) {
 		
 		LOG.log(Level.INFO, "Calling Order Service removeFromOrderList()");
 
@@ -287,6 +294,11 @@ public class OrderService {
 			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			} else {
+				
+				// If Order is not under the same vendor throw error.
+				if ( vendorId!=null && !vendorId.equals(orderRep.getVendorId()) ) {
+					throw new ServiceAccessResourceFailureException();
+				}
 				
 				// Only status New or Ordered can remove oder from list				
 				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
