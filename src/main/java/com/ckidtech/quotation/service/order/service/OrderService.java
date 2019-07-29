@@ -102,7 +102,7 @@ public class OrderService {
 		return orderRepository.findUserOrder(vendorId, userId, dateFrom, dateTo, pageable);	
 	}
 	
-	public QuotationResponse createNewOrder(Order order) {
+	public QuotationResponse createNewOrder(String userId, Order order) {
 		
 		LOG.log(Level.INFO, "Calling Order Service createNewOrder()");
 
@@ -138,7 +138,7 @@ public class OrderService {
 				
 				order.setStatus(Order.Status.New);		
 				order.setActiveIndicator(true);
-				Util.initalizeCreatedInfo(order, msgController.getMsg("info.PORC"));	
+				Util.initalizeCreatedInfo(order, userId, msgController.getMsg("info.PORC"));	
 				orderRepository.save(order);
 				
 				quotation.setOrder(order);
@@ -149,7 +149,7 @@ public class OrderService {
 		
 	}
 
-	public QuotationResponse updateOrder(Order order) {
+	public QuotationResponse updateOrder(String userId, Order order) {
 		
 		LOG.log(Level.INFO, "Calling Order Service updateOrder()");
 
@@ -188,7 +188,7 @@ public class OrderService {
 			
 			if (quotation.getMessages().isEmpty()) { 
 					
-				Util.initalizeUpdatedInfo(orderRep, orderRep.getDifferences(order));		
+				Util.initalizeUpdatedInfo(orderRep, userId, orderRep.getDifferences(order));		
 				orderRep.setReferenceOrder(order.getReferenceOrder());
 				orderRep.setUserId(order.getUserId());
 				orderRep.setStatus(order.getStatus());
@@ -204,7 +204,7 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse addOrderItem(String vendorId, String orderID, OrderItem orderItem) {
+	public QuotationResponse addOrderItem(String vendorId, String userId, String orderID, OrderItem orderItem) {
 		
 		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
 
@@ -258,12 +258,12 @@ public class OrderService {
 				// If order item is not exists, add otherwise update existing
 				if ( orderItemRep==null ) {
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
-					Util.initalizeUpdatedInfo(orderRep, String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
+					Util.initalizeUpdatedInfo(orderRep, userId, String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
 					orderRep.getOrders().put(orderItem.getProductId(), orderItem);
 				} else {
 					orderItemRep.setQuantity(orderItem.getQuantity());
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
-					Util.initalizeUpdatedInfo(orderRep, String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
+					Util.initalizeUpdatedInfo(orderRep, userId, String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 				}
 					
 				orderRepository.save(orderRep);				
@@ -276,7 +276,7 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse removeFromOrderList(String vendorId, String orderID, String productId) {
+	public QuotationResponse removeFromOrderList(String vendorId, String userId, String orderID, String productId) {
 		
 		LOG.log(Level.INFO, "Calling Order Service removeFromOrderList()");
 
@@ -320,7 +320,7 @@ public class OrderService {
 				if ( orderItemRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
-					Util.initalizeUpdatedInfo(orderRep, String.format(msgController.getMsg("info.PORO"), orderRep.toString()));					
+					Util.initalizeUpdatedInfo(orderRep, userId, String.format(msgController.getMsg("info.PORO"), orderRep.toString()));					
 					orderRep.getOrders().remove(productId);
 					orderRepository.save(orderRep);
 				}	

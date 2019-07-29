@@ -63,10 +63,11 @@ public class QuotationControllerOrder {
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order[] orders) throws Exception {
 		LOG.log(Level.INFO, "Calling API /vendor/createmultipleorders");
+		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
 		ArrayList<QuotationResponse> quotations = new ArrayList<QuotationResponse>();  
 		for( Order order : orders ) {
 			Util.checkAccessGrant(authorization, UserRole.VENDOR, order.getVendorId());
-			quotations.add(OrderService.createNewOrder(order));
+			quotations.add(OrderService.createNewOrder(userId, order));
 			
 		}
 		return new ResponseEntity<Object>(quotations, HttpStatus.CREATED);		
@@ -98,7 +99,8 @@ public class QuotationControllerOrder {
 			@RequestBody Order order) throws Exception {
 		LOG.log(Level.INFO, "Calling API /user/createneworder");
 		Util.checkAccessGrant(authorization, UserRole.USER, order.getVendorId());
-		return new ResponseEntity<Object>(OrderService.createNewOrder(order), HttpStatus.CREATED);		
+		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
+		return new ResponseEntity<Object>(OrderService.createNewOrder(userId, order), HttpStatus.CREATED);		
 	}	
 
 
@@ -108,7 +110,8 @@ public class QuotationControllerOrder {
 			@RequestBody Order order) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /user/updateorder");
 		Util.checkAccessGrant(authorization, UserRole.USER, order.getVendorId());
-		return new ResponseEntity<Object>(OrderService.updateOrder(order), HttpStatus.OK);		
+		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
+		return new ResponseEntity<Object>(OrderService.updateOrder(userId, order), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/user/addtoorderitem/{orderID}", method = RequestMethod.POST)
@@ -119,7 +122,8 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/addtoorderitem/" + orderID);
 		Util.checkAccessGrant(authorization, UserRole.USER, null);
 		String vendorId = (String) Util.getClaimsValueFromToken(authorization, "vendor");
-		return new ResponseEntity<Object>(OrderService.addOrderItem(vendorId, orderID, orderItem), HttpStatus.OK);		
+		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
+		return new ResponseEntity<Object>(OrderService.addOrderItem(vendorId, userId, orderID, orderItem), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/user/removefromorderlist/{orderID}/{productId}")
@@ -130,7 +134,8 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/removefromorderlist/" + orderID + "/" + productId);
 		Util.checkAccessGrant(authorization, UserRole.USER, null);
 		String vendorId = (String) Util.getClaimsValueFromToken(authorization, "vendor");
-		return new ResponseEntity<Object>(OrderService.removeFromOrderList(vendorId, orderID, productId), HttpStatus.OK);		
+		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
+		return new ResponseEntity<Object>(OrderService.removeFromOrderList(vendorId, userId, orderID, productId), HttpStatus.OK);		
 	}
 			
 }
