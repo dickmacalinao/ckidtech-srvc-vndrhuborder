@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ckidtech.quotation.service.core.controller.QuotationResponse;
+import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.Order;
 import com.ckidtech.quotation.service.core.model.OrderItem;
@@ -44,8 +45,9 @@ public class QuotationControllerOrder {
 			@RequestBody OrderSearchCriteria orderSearchCriteria) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /vendor/getvendororder/" + orderSearchCriteria.toString());
 		
-		Util.checkAccessGrant(authorization, UserRole.VENDOR, orderSearchCriteria.getVendorId());
-		return new ResponseEntity<Object>(OrderService.getVendorOrder(orderSearchCriteria), HttpStatus.OK);		
+		AppUser loginUser = new AppUser(authorization);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR, null);
+		return new ResponseEntity<Object>(OrderService.getVendorOrder(loginUser, orderSearchCriteria), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/vendor/getorderchart")
@@ -53,8 +55,10 @@ public class QuotationControllerOrder {
 			@RequestHeader("authorization") String authorization,
 			@RequestBody ChartRequest chartReq) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /vendor/getorderchart/");		
-		Util.checkAccessGrant(authorization, UserRole.VENDOR, chartReq.getVendorId());
-		return new ResponseEntity<Object>(OrderService.getOrderChart(chartReq), HttpStatus.OK);		
+		
+		AppUser loginUser = new AppUser(authorization);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR, null);
+		return new ResponseEntity<Object>(OrderService.getOrderChart(loginUser, chartReq), HttpStatus.OK);		
 	}
 	
 	// For testing purposes
@@ -63,11 +67,12 @@ public class QuotationControllerOrder {
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order[] orders) throws Exception {
 		LOG.log(Level.INFO, "Calling API /vendor/createmultipleorders");
-		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
+		
+		AppUser loginUser = new AppUser(authorization);		
 		ArrayList<QuotationResponse> quotations = new ArrayList<QuotationResponse>();  
-		for( Order order : orders ) {
-			Util.checkAccessGrant(authorization, UserRole.VENDOR, order.getVendorId());
-			quotations.add(OrderService.createNewOrder(userId, order));
+		for( Order order : orders ) {			
+			Util.checkAccessGrant(loginUser, UserRole.VENDOR, order.getVendorId());
+			quotations.add(OrderService.createNewOrder(loginUser, order));
 			
 		}
 		return new ResponseEntity<Object>(quotations, HttpStatus.CREATED);		
@@ -82,15 +87,14 @@ public class QuotationControllerOrder {
 			@PathVariable("currDate") String currDate) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /user/getorderfortheday/" + currDate);
 		
-		Util.checkAccessGrant(authorization, UserRole.USER, null);
-		String vendorId = (String) Util.getClaimsValueFromToken(authorization, "vendor");
-		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.USER, null);
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 		LocalDateTime dFrom = LocalDateTime.parse(currDate + " 00:00:00", formatter);
 		LocalDateTime dTo = LocalDateTime.parse(currDate + " 23:59:59", formatter);
 		
-		return new ResponseEntity<Object>(OrderService.getUserOrderForTheDay(vendorId, userId, dFrom, dTo), HttpStatus.OK);		
+		return new ResponseEntity<Object>(OrderService.getUserOrderForTheDay(loginUser, dFrom, dTo), HttpStatus.OK);		
 	}
 
 	@RequestMapping(value = "/user/createneworder", method = RequestMethod.POST)
@@ -98,9 +102,10 @@ public class QuotationControllerOrder {
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order order) throws Exception {
 		LOG.log(Level.INFO, "Calling API /user/createneworder");
-		Util.checkAccessGrant(authorization, UserRole.USER, order.getVendorId());
-		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
-		return new ResponseEntity<Object>(OrderService.createNewOrder(userId, order), HttpStatus.CREATED);		
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.USER, order.getVendorId());
+		return new ResponseEntity<Object>(OrderService.createNewOrder(loginUser, order), HttpStatus.CREATED);		
 	}	
 
 
@@ -109,9 +114,10 @@ public class QuotationControllerOrder {
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order order) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /user/updateorder");
-		Util.checkAccessGrant(authorization, UserRole.USER, order.getVendorId());
-		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
-		return new ResponseEntity<Object>(OrderService.updateOrder(userId, order), HttpStatus.OK);		
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.USER, order.getVendorId());
+		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/user/addtoorderitem/{orderID}", method = RequestMethod.POST)
@@ -120,10 +126,10 @@ public class QuotationControllerOrder {
 			@PathVariable("orderID") String orderID, 
 			@RequestBody OrderItem orderItem) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /user/addtoorderitem/" + orderID);
-		Util.checkAccessGrant(authorization, UserRole.USER, null);
-		String vendorId = (String) Util.getClaimsValueFromToken(authorization, "vendor");
-		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
-		return new ResponseEntity<Object>(OrderService.addOrderItem(vendorId, userId, orderID, orderItem), HttpStatus.OK);		
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.USER, null);
+		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, orderItem), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/user/removefromorderlist/{orderID}/{productId}")
@@ -132,10 +138,10 @@ public class QuotationControllerOrder {
 			@PathVariable("orderID") String orderID, 
 			@PathVariable("productId") String productId) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /user/removefromorderlist/" + orderID + "/" + productId);
-		Util.checkAccessGrant(authorization, UserRole.USER, null);
-		String vendorId = (String) Util.getClaimsValueFromToken(authorization, "vendor");
-		String userId = (String) Util.getClaimsValueFromToken(authorization, "sub");
-		return new ResponseEntity<Object>(OrderService.removeFromOrderList(vendorId, userId, orderID, productId), HttpStatus.OK);		
+		
+		AppUser loginUser = new AppUser(authorization);
+		Util.checkAccessGrant(loginUser, UserRole.USER, null);
+		return new ResponseEntity<Object>(OrderService.removeFromOrderList(loginUser, orderID, productId), HttpStatus.OK);		
 	}
 			
 }
