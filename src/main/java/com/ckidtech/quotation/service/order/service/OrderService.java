@@ -32,7 +32,6 @@ import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.Vendor;
-import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
 
 @ComponentScan({"com.ckidtech.quotation.service.core.controller"})
@@ -50,12 +49,20 @@ public class OrderService {
 	private ProductRepository productRepository;
 	
 	@Autowired
+	private SequenceService sequenceService;
+	
+	@Autowired
 	private MessageController msgController;
 
 	private static final Logger LOG = Logger.getLogger(OrderService.class.getName());
 	
 	public QuotationResponse getVendorOrder(AppUser loginUser, OrderSearchCriteria orderSearchCriteria) throws Exception {
 		LOG.log(Level.INFO, "Calling Order Service getVendorOrder()");
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);		
 		
 		QuotationResponse quotation = new QuotationResponse();
 		
@@ -65,9 +72,6 @@ public class OrderService {
 			quotation.addMessage(msgController.createMsg("error.MFE", "Date To"));
 		
 		if ( quotation.getMessages().isEmpty() ) {
-			
-			Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
-			Util.checkIfAlreadyActivated(vendorRep);
 			
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 			
@@ -94,6 +98,12 @@ public class OrderService {
 	
 	public List<Order> getUserOrderForTheDay(AppUser loginUser, LocalDateTime dateFrom, LocalDateTime dateTo) {
 		LOG.log(Level.INFO, "Calling Order Service getUserOrderForTheDay()");
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
+		
 		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
 		return orderRepository.findUserOrder(loginUser.getVendor(), loginUser.getId(), dateFrom, dateTo, pageable);	
 	}
@@ -101,29 +111,34 @@ public class OrderService {
 	public QuotationResponse createNewOrder(AppUser loginUser, Order order) throws Exception {
 		
 		LOG.log(Level.INFO, "Calling Order Service createNewOrder()");
-
-		QuotationResponse quotation = new QuotationResponse();		
 		
-		if (order.getReferenceOrder() == null || "".equals(order.getReferenceOrder()))
-			quotation.addMessage(msgController.createMsg("error.MFE", "Reference Order"));
-		if (order.getOrderDate()== null)
-			quotation.addMessage(msgController.createMsg("error.MFE", "Order Date"));
+		Util.checkIfAlreadyActivated(loginUser);
+			
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);	
 		
-		if (quotation.getMessages().isEmpty()) {
+		QuotationResponse quotation = new QuotationResponse();
+		
+		// Set Order Date if not specified
+		if ( order.getOrderDate()== null ) {
+			order.setOrderDate(LocalDateTime.now());
+		}	
+		
+		// Set Reference Order if not specified
+		if ( order.getReferenceOrder()==null || "".equals(order.getReferenceOrder())) {
+			order.setReferenceOrder("#" + sequenceService.getNextSequence(loginUser.getVendor()));			
+		}
+		
+		order.setVendorId(loginUser.getVendor());
+		order.setUserId(loginUser.getId());
+		order.setStatus(Order.Status.New);		
+		order.setActiveIndicator(true);
+		Util.initalizeCreatedInfo(order, loginUser.getId(), msgController.getMsg("info.PORC"));	
+		orderRepository.save(order);
+		
+		quotation.setOrder(order);
+		quotation.addMessage(msgController.createMsg("info.PORC"));
 			
-			Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
-			Util.checkIfAlreadyActivated(vendorRep);
-								
-			order.setVendorId(loginUser.getVendor());
-			order.setUserId(loginUser.getId());
-			order.setStatus(Order.Status.New);		
-			order.setActiveIndicator(true);
-			Util.initalizeCreatedInfo(order, loginUser.getId(), msgController.getMsg("info.PORC"));	
-			orderRepository.save(order);
-			
-			quotation.setOrder(order);
-			
-		}		
 		
 		return quotation;
 		
@@ -132,22 +147,22 @@ public class OrderService {
 	public QuotationResponse updateOrder(AppUser loginUser, Order order) throws Exception {
 		
 		LOG.log(Level.INFO, "Calling Order Service updateOrder()");
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
 		
 		if (order.getId() == null || "".equals(order.getId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order ID"));
-		if (order.getReferenceOrder() == null || "".equals(order.getReferenceOrder()))
-			quotation.addMessage(msgController.createMsg("error.MFE", "Reference Order"));
 		if (order.getStatus()== null )
 			quotation.addMessage(msgController.createMsg("error.MFE", "Status"));
 		if (order.getOrderDate()== null )
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order Date"));
 				
 		if (quotation.getMessages().isEmpty()) {
-			
-			Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
-			Util.checkIfAlreadyActivated(vendorRep);
 			
 			Order orderRep = orderRepository.findById(order.getId()).orElse(null);
 			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
@@ -159,13 +174,13 @@ public class OrderService {
 				order.setUserId(loginUser.getId());
 					
 				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order));		
-				orderRep.setReferenceOrder(order.getReferenceOrder());
 				orderRep.setUserId(loginUser.getId());
 				orderRep.setStatus(order.getStatus());
 				orderRep.setOrderDate(order.getOrderDate());					
 				orderRepository.save(orderRep);
 				
 				quotation.setOrder(orderRep);
+				quotation.addMessage(msgController.createMsg("info.PORU"));
 				
 			}
 		}		
@@ -177,6 +192,11 @@ public class OrderService {
 	public QuotationResponse addOrderItem(AppUser loginUser, String orderID, OrderItem orderItem) throws Exception {
 		
 		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
 		
@@ -189,10 +209,7 @@ public class OrderService {
 				quotation.addMessage(msgController.createMsg("error.MFE", "Product ID"));			
 		}
 		
-		if (quotation.getMessages().isEmpty()) {
-			
-			Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
-			Util.checkIfAlreadyActivated(vendorRep);
+		if (quotation.getMessages().isEmpty()) {			
 			
 			Order orderRep = orderRepository.findById(orderID).orElse(null);
 			// Verify if Purchase order exists and active
@@ -210,28 +227,33 @@ public class OrderService {
 			// Verify if Product exists and active
 			if  ( prod==null || !prod.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.VPNFE"));
+			} else if ( prod.getProdComp()==null )  {
+				quotation.addMessage(msgController.createMsg("error.VPCME"));
+			}
+			
+			OrderItem orderItemRep = null;
+			
+			// Retrieve the order item from previous and if exists, otherwise initialize
+			if ( orderRep.getOrders() == null ) {
+				orderRep.setOrders(new HashMap<String, OrderItem>());
+			} else {					
+				orderItemRep = orderRep.getOrders().get(orderItem.getProductId());
+				
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
-				
-				OrderItem orderItemRep = null;
-				
-				// Retrieve the order item from previous and if exists, otherwise initialize
-				if ( orderRep.getOrders() == null ) {
-					orderRep.setOrders(new HashMap<String, OrderItem>());
-				} else {					
-					orderItemRep = orderRep.getOrders().get(orderItem.getProductId());
-				}
 				
 				// If order item is not exists, add otherwise update existing
 				if ( orderItemRep==null ) {
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
 					orderRep.getOrders().put(orderItem.getProductId(), orderItem);
+					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
 					orderItemRep.setQuantity(orderItem.getQuantity());
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
+					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
 					
 				orderRepository.save(orderRep);				
@@ -247,6 +269,11 @@ public class OrderService {
 	public QuotationResponse removeFromOrderList(AppUser loginUser, String orderID, String productId) throws Exception {
 		
 		LOG.log(Level.INFO, "Calling Order Service removeFromOrderList()");
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
 		
@@ -257,24 +284,22 @@ public class OrderService {
 		
 		if (quotation.getMessages().isEmpty()) {
 			
-			Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
-			Util.checkIfAlreadyActivated(vendorRep);
-			
 			Order orderRep = orderRepository.findById(orderID).orElse(null);
 			// Verify if Purchase order exists and active
 			if  ( orderRep==null || !orderRep.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			} else {
 				
-				// If Order is not under the same vendor throw error.
-				if ( loginUser.getVendor()!=null && !loginUser.getVendor().equals(orderRep.getVendorId()) ) {
-					throw new ServiceAccessResourceFailureException();
-				}
-				
 				// Only status New or Ordered can remove oder from list				
 				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
 					quotation.addMessage(msgController.createMsg("error.POUNAE"));
 				}
+			}
+			
+			Product prod = productRepository.findById(productId).orElse(null);
+			// Verify if Product exists and active
+			if  ( prod==null || !prod.isActiveIndicator() ) {
+				quotation.addMessage(msgController.createMsg("error.VPNFE"));
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
@@ -291,9 +316,10 @@ public class OrderService {
 				if ( orderItemRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), orderRep.toString()));					
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()));					
 					orderRep.getOrders().remove(productId);
 					orderRepository.save(orderRep);
+					quotation.addMessage(msgController.createMsg("info.PORO", prod.getName()));
 				}	
 								
 				quotation.setOrder(orderRep);
@@ -305,7 +331,13 @@ public class OrderService {
 		
 	}
 	
-	public ChartResponse getOrderChart(AppUser loginUser, ChartRequest chartRequest) throws Exception {
+	public ChartResponse getOrderChart(AppUser loginUser, ChartRequest chartRequest) throws Exception {		
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
+		
 		ChartResponse chartResponse = new ChartResponse();
 		
 		if ( chartRequest.getLabelBy()==null ) {
@@ -322,9 +354,6 @@ public class OrderService {
 		}
 		
 		if ( chartResponse.getMessages().isEmpty() ) {
-			
-			Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
-			Util.checkIfAlreadyActivated(vendorRep);
 
 			List<String> labels = getChartLabels(chartRequest, chartResponse);
 			List<DatasetItem> datasets = new ArrayList<DatasetItem>();
@@ -434,6 +463,14 @@ public class OrderService {
 		}		
 		
 		return data;		
+	}
+	
+	
+	/**
+	 * This should not be called in the logic. This is used for unit testing purposes only
+	 */
+	public void deleteAllOrders() {
+		orderRepository.deleteAll();		
 	}
 	
 }
