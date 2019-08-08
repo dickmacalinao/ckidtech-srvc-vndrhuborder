@@ -46,7 +46,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /vendor/getvendororder/" + orderSearchCriteria.toString());
 		
 		AppUser loginUser = new AppUser(authorization);
-		Util.checkAccessGrant(loginUser, UserRole.VENDOR, null);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
 		return new ResponseEntity<Object>(OrderService.getVendorOrder(loginUser, orderSearchCriteria), HttpStatus.OK);		
 	}
 	
@@ -57,7 +57,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /vendor/getorderchart/");		
 		
 		AppUser loginUser = new AppUser(authorization);
-		Util.checkAccessGrant(loginUser, UserRole.VENDOR, null);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
 		return new ResponseEntity<Object>(OrderService.getOrderChart(loginUser, chartReq), HttpStatus.OK);		
 	}
 	
@@ -71,7 +71,7 @@ public class QuotationControllerOrder {
 		AppUser loginUser = new AppUser(authorization);		
 		ArrayList<QuotationResponse> quotations = new ArrayList<QuotationResponse>();  
 		for( Order order : orders ) {			
-			Util.checkAccessGrant(loginUser, UserRole.VENDOR, order.getVendorId());
+			Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, order.getVendorId());
 			quotations.add(OrderService.createNewOrder(loginUser, order));
 			
 		}
@@ -88,7 +88,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/getorderfortheday/" + currDate);
 		
 		AppUser loginUser = new AppUser(authorization);	
-		Util.checkAccessGrant(loginUser, UserRole.USER, null);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 		LocalDateTime dFrom = LocalDateTime.parse(currDate + " 00:00:00", formatter);
@@ -104,7 +104,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/createneworder");
 		
 		AppUser loginUser = new AppUser(authorization);	
-		Util.checkAccessGrant(loginUser, UserRole.USER, order.getVendorId());
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, order.getVendorId());
 		return new ResponseEntity<Object>(OrderService.createNewOrder(loginUser, order), HttpStatus.CREATED);		
 	}	
 
@@ -116,7 +116,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/updateorder");
 		
 		AppUser loginUser = new AppUser(authorization);	
-		Util.checkAccessGrant(loginUser, UserRole.USER, order.getVendorId());
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, order.getVendorId());
 		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
@@ -128,7 +128,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/addtoorderitem/" + orderID);
 		
 		AppUser loginUser = new AppUser(authorization);	
-		Util.checkAccessGrant(loginUser, UserRole.USER, null);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
 		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, orderItem), HttpStatus.OK);		
 	}
 	
@@ -140,7 +140,7 @@ public class QuotationControllerOrder {
 		LOG.log(Level.INFO, "Calling API /user/removefromorderlist/" + orderID + "/" + productId);
 		
 		AppUser loginUser = new AppUser(authorization);
-		Util.checkAccessGrant(loginUser, UserRole.USER, null);
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
 		return new ResponseEntity<Object>(OrderService.removeFromOrderList(loginUser, orderID, productId), HttpStatus.OK);		
 	}
 			

@@ -29,6 +29,7 @@ import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.ReturnMessage;
 import com.ckidtech.quotation.service.core.model.Vendor;
+import com.ckidtech.quotation.service.core.security.UserRole;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {SpringMongoConfiguration.class})
@@ -49,6 +50,8 @@ public class OrderServiceTest {
 	@Autowired
 	private ProductRepository productRepository; 
 	
+	private String TEST_USER_ID;
+	
 	@Before
 	public  void initTest() {
 		
@@ -60,9 +63,10 @@ public class OrderServiceTest {
 		vendorRepository.save(vendor);
 		
 		appUserRepository.deleteAll();
-		AppUser user = new AppUser("TEST_USER","Test User", "password", "TEST_VENDOR", "USER");
+		AppUser user = new AppUser("TEST_USER","Test User", "password", UserRole.VENDOR_USER, "TEST_VENDOR", "USER", vendor.getId());
 		user.setActiveIndicator(true);
 		appUserRepository.save(user);
+		TEST_USER_ID = user.getId();
 	
 		productRepository.deleteAll();
 		Product product = new Product("TEST_PRODUCT", "TEST_VENDOR", "Food", "Ice Tea", "imglink");
@@ -74,7 +78,7 @@ public class OrderServiceTest {
 	@Test
 	public void createNewOrderTest() throws Exception {
 		
-		AppUser loginUser = appUserRepository.findById("TEST_USER").orElse(null);
+		AppUser loginUser = appUserRepository.findById(TEST_USER_ID).orElse(null);
 				
 		// Successful creation without parameter		
 		QuotationResponse response = orderService.createNewOrder(loginUser, new Order());
@@ -85,7 +89,7 @@ public class OrderServiceTest {
 		assertNotEquals(null, response.getOrder().getOrderDate());
 		assertEquals(Order.Status.New, response.getOrder().getStatus());
 		assertEquals(true, response.getOrder().isActiveIndicator());
-		assertEquals(loginUser.getVendor(), response.getOrder().getVendorId());
+		assertEquals(loginUser.getObjectRef(), response.getOrder().getVendorId());
 		
 		// Successful creation with parameter
 		LocalDateTime thisTime = LocalDateTime.now();
@@ -97,7 +101,7 @@ public class OrderServiceTest {
 		assertEquals(thisTime, response.getOrder().getOrderDate());
 		assertEquals(Order.Status.New, response.getOrder().getStatus());
 		assertEquals(true, response.getOrder().isActiveIndicator());
-		assertEquals(loginUser.getVendor(), response.getOrder().getVendorId());
+		assertEquals(loginUser.getObjectRef(), response.getOrder().getVendorId());
 		
 	}
 	
@@ -106,7 +110,7 @@ public class OrderServiceTest {
 		
 		createNewOrderTest();
 		
-		AppUser loginUser = appUserRepository.findById("TEST_USER").orElse(null);
+		AppUser loginUser = appUserRepository.findById(TEST_USER_ID).orElse(null);
 		LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS);
 		
 		LocalDateTime endTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).plusDays(1);
@@ -150,7 +154,7 @@ public class OrderServiceTest {
 		
 		createNewOrderTest();
 		
-		AppUser loginUser = appUserRepository.findById("TEST_USER").orElse(null);
+		AppUser loginUser = appUserRepository.findById(TEST_USER_ID).orElse(null);
 		LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS);
 		
 		LocalDateTime endTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).plusDays(1);

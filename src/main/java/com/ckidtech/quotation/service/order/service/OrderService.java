@@ -61,7 +61,7 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);		
 		
 		QuotationResponse quotation = new QuotationResponse();
@@ -80,14 +80,14 @@ public class OrderService {
 			
 			Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
 			
-			quotation.setOrders(orderRepository.findVendorOrder(loginUser.getVendor(), dateFrom, dateTo, pageable));
+			quotation.setOrders(orderRepository.findVendorOrder(loginUser.getObjectRef(), dateFrom, dateTo, pageable));
 			
 			
 			if ( orderSearchCriteria.getStatus()!=null ) {
-				quotation.setOrders(orderRepository.findVendorOrderByStatus(loginUser.getVendor(), 
+				quotation.setOrders(orderRepository.findVendorOrderByStatus(loginUser.getObjectRef(), 
 						dateFrom, dateTo, orderSearchCriteria.getStatus(), pageable));
 			} else {	
-				quotation.setOrders(orderRepository.findVendorOrder(loginUser.getVendor(), dateFrom, dateTo, pageable));
+				quotation.setOrders(orderRepository.findVendorOrder(loginUser.getObjectRef(), dateFrom, dateTo, pageable));
 			}
 				
 			
@@ -101,11 +101,11 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 		
 		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
-		return orderRepository.findUserOrder(loginUser.getVendor(), loginUser.getId(), dateFrom, dateTo, pageable);	
+		return orderRepository.findUserOrder(loginUser.getObjectRef(), loginUser.getId(), dateFrom, dateTo, pageable);	
 	}
 	
 	public QuotationResponse createNewOrder(AppUser loginUser, Order order) throws Exception {
@@ -114,7 +114,7 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 			
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);	
 		
 		QuotationResponse quotation = new QuotationResponse();
@@ -126,10 +126,10 @@ public class OrderService {
 		
 		// Set Reference Order if not specified
 		if ( order.getReferenceOrder()==null || "".equals(order.getReferenceOrder())) {
-			order.setReferenceOrder("#" + sequenceService.getNextSequence(loginUser.getVendor()));			
+			order.setReferenceOrder("#" + sequenceService.getNextSequence(loginUser.getObjectRef()));			
 		}
 		
-		order.setVendorId(loginUser.getVendor());
+		order.setVendorId(loginUser.getObjectRef());
 		order.setUserId(loginUser.getId());
 		order.setStatus(Order.Status.New);		
 		order.setActiveIndicator(true);
@@ -150,7 +150,7 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
@@ -195,7 +195,7 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
@@ -272,7 +272,7 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
@@ -335,7 +335,7 @@ public class OrderService {
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
-		Vendor vendorRep = vendorRepository.findById(loginUser.getVendor()).orElse(null);	
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 		
 		ChartResponse chartResponse = new ChartResponse();
@@ -358,7 +358,7 @@ public class OrderService {
 			List<String> labels = getChartLabels(chartRequest, chartResponse);
 			List<DatasetItem> datasets = new ArrayList<DatasetItem>();
 			
-			datasets.add(getDataSetItem(loginUser.getVendor(), chartRequest, labels));
+			datasets.add(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels));
 			
 			chartResponse.setLabels(labels);
 			chartResponse.setDatasets(datasets);
