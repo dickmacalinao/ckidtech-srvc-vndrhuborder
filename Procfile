@@ -1,1 +1,1 @@
-web: java -jar ./target/quotation-service-order-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev --server.port=$PORT
+web: java -jar ./target/quotation-service-vendorhuborder-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev --server.port=$PORT

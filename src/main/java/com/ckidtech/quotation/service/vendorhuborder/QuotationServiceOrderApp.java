@@ -1,4 +1,4 @@
-package com.ckidtech.quotation.service.order;
+package com.ckidtech.quotation.service.vendorhuborder;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -20,7 +20,7 @@ public class QuotationServiceOrderApp {
 
 	@RequestMapping("/")
 	public String index() {
-		return "Welcome to Quotation Order App Service at port " + env.getProperty("local.server.port") + ".";
+		return "Welcome to Vendor Hub Order App Service at port " + env.getProperty("local.server.port") + ".";
 	}
 
 }

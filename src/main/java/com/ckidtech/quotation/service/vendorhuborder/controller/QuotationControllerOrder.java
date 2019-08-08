@@ -1,4 +1,4 @@
-package com.ckidtech.quotation.service.order.controller;
+package com.ckidtech.quotation.service.vendorhuborder.controller;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,7 +25,7 @@ import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
-import com.ckidtech.quotation.service.order.service.OrderService;
+import com.ckidtech.quotation.service.vendorhuborder.service.OrderService;
 
 @ComponentScan({"com.ckidtech.quotation.service.core.service"})
 @RestController
@@ -39,22 +39,22 @@ public class QuotationControllerOrder {
 	
 	// By Vendors
 	
-	@RequestMapping(value = "/vendor/getvendororder")
+	@RequestMapping(value = "/vendoradmin/getvendororder")
 	public ResponseEntity<Object> getVendorOrder(
 			@RequestHeader("authorization") String authorization, 
 			@RequestBody OrderSearchCriteria orderSearchCriteria) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /vendor/getvendororder/" + orderSearchCriteria.toString());
+		LOG.log(Level.INFO, "Calling API /vendoradmin/getvendororder/" + orderSearchCriteria.toString());
 		
 		AppUser loginUser = new AppUser(authorization);
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
 		return new ResponseEntity<Object>(OrderService.getVendorOrder(loginUser, orderSearchCriteria), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/vendor/getorderchart")
+	@RequestMapping(value = "/vendoradmin/getorderchart")
 	public ResponseEntity<Object> geOrderChart(
 			@RequestHeader("authorization") String authorization,
 			@RequestBody ChartRequest chartReq) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /vendor/getorderchart/");		
+		LOG.log(Level.INFO, "Calling API /vendoradmin/getorderchart/");		
 		
 		AppUser loginUser = new AppUser(authorization);
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
@@ -62,11 +62,11 @@ public class QuotationControllerOrder {
 	}
 	
 	// For testing purposes
-	@RequestMapping(value = "/vendor/createmultipleorders", method = RequestMethod.POST)
+	@RequestMapping(value = "/vendoradmin/createmultipleorders", method = RequestMethod.POST)
 	public ResponseEntity<Object> createNewOrders(
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order[] orders) throws Exception {
-		LOG.log(Level.INFO, "Calling API /vendor/createmultipleorders");
+		LOG.log(Level.INFO, "Calling API /vendoradmin/createmultipleorders");
 		
 		AppUser loginUser = new AppUser(authorization);		
 		ArrayList<QuotationResponse> quotations = new ArrayList<QuotationResponse>();  
@@ -81,11 +81,11 @@ public class QuotationControllerOrder {
 	
 	// By Users
 
-	@RequestMapping(value = "/user/getorderfortheday/{currDate}")
+	@RequestMapping(value = "/vendoruser/getorderfortheday/{currDate}")
 	public ResponseEntity<Object> getUserPurchaseOrderForTheDay(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("currDate") String currDate) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /user/getorderfortheday/" + currDate);
+		LOG.log(Level.INFO, "Calling API /vendoruser/getorderfortheday/" + currDate);
 		
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
@@ -97,11 +97,11 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(OrderService.getUserOrderForTheDay(loginUser, dFrom, dTo), HttpStatus.OK);		
 	}
 
-	@RequestMapping(value = "/user/createneworder", method = RequestMethod.POST)
+	@RequestMapping(value = "/vendoruser/createneworder", method = RequestMethod.POST)
 	public ResponseEntity<Object> createNewOrder(
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order order) throws Exception {
-		LOG.log(Level.INFO, "Calling API /user/createneworder");
+		LOG.log(Level.INFO, "Calling API /vendoruser/createneworder");
 		
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, order.getVendorId());
@@ -109,35 +109,35 @@ public class QuotationControllerOrder {
 	}	
 
 
-	@RequestMapping(value = "/user/updateorder", method = RequestMethod.POST)
+	@RequestMapping(value = "/vendoruser/updateorder", method = RequestMethod.POST)
 	public ResponseEntity<Object> updateOrder(
 			@RequestHeader("authorization") String authorization,
 			@RequestBody Order order) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /user/updateorder");
+		LOG.log(Level.INFO, "Calling API /vendoruser/updateorder");
 		
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, order.getVendorId());
 		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/user/addtoorderitem/{orderID}", method = RequestMethod.POST)
+	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}", method = RequestMethod.POST)
 	public ResponseEntity<Object> addToOrderList(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("orderID") String orderID, 
 			@RequestBody OrderItem orderItem) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /user/addtoorderitem/" + orderID);
+		LOG.log(Level.INFO, "Calling API /vendoruser/addtoorderitem/" + orderID);
 		
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
 		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, orderItem), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/user/removefromorderlist/{orderID}/{productId}")
+	@RequestMapping(value = "/vendoruser/removefromorderlist/{orderID}/{productId}")
 	public ResponseEntity<Object> removeFromOrderList(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("orderID") String orderID, 
 			@PathVariable("productId") String productId) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /user/removefromorderlist/" + orderID + "/" + productId);
+		LOG.log(Level.INFO, "Calling API /vendoruser/removefromorderlist/" + orderID + "/" + productId);
 		
 		AppUser loginUser = new AppUser(authorization);
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);

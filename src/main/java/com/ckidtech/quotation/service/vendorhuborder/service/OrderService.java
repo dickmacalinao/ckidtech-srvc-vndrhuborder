@@ -1,4 +1,4 @@
-package com.ckidtech.quotation.service.order.service;
+package com.ckidtech.quotation.service.vendorhuborder.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

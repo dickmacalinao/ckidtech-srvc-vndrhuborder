@@ -30,10 +30,11 @@ import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.ReturnMessage;
 import com.ckidtech.quotation.service.core.model.Vendor;
 import com.ckidtech.quotation.service.core.security.UserRole;
+import com.ckidtech.quotation.service.vendorhuborder.service.OrderService;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {SpringMongoConfiguration.class})
-@ComponentScan({"com.ckidtech.quotation.service.order.service"})
+@ComponentScan({"com.ckidtech.quotation.service.vendorhuborder.service"})
 @AutoConfigureDataMongo  
 public class OrderServiceTest {
 	

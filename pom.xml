@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.ckidtech.quotation-service-order</groupId>
-  <artifactId>quotation-service-order</artifactId>
+  <groupId>com.ckidtech.quotation-service-vendorhuborder</groupId>
+  <artifactId>quotation-service-vendorhuborder</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   
-  <name>quotation-service-order</name>
-  <description>quotation-service-order</description>
+  <name>quotation-service-vendorhuborder</name>
+  <description>quotation-service-vendorhuborder</description>
   
   <parent>
 		<groupId>org.springframework.boot</groupId>
@@ -19,7 +19,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
 		<spring-cloud.version>Finchley.M9</spring-cloud.version>
-		<start-class>com.ckidtech.quotation.service.order.QuotationServiceOrderApp</start-class>
+		<start-class>com.ckidtech.quotation.service.vendorhuborder.QuotationServiceOrderApp</start-class>
 	</properties>
 	
 	<dependencies>	

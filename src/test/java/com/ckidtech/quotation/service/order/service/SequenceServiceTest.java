@@ -11,10 +11,12 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.ckidtech.quotation.service.vendorhuborder.service.SequenceService;
+
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {SpringMongoConfiguration.class})
-@ComponentScan({"com.ckidtech.quotation.service.order.service"})
+@ComponentScan({"com.ckidtech.quotation.service.vendorhuborder.service"})
 @AutoConfigureDataMongo
 public class SequenceServiceTest {
 	
