@@ -64,7 +64,7 @@ public class OrderServiceTest {
 		vendorRepository.save(vendor);
 		
 		appUserRepository.deleteAll();
-		AppUser user = new AppUser("TEST_USER","Test User", "password", UserRole.VENDOR_USER, "TEST_VENDOR", "USER", vendor.getId());
+		AppUser user = new AppUser("TEST_USER","Test User", "password", UserRole.VENDOR_USER, "TEST_VENDOR", vendor.getId());
 		user.setActiveIndicator(true);
 		appUserRepository.save(user);
 		TEST_USER_ID = user.getId();
