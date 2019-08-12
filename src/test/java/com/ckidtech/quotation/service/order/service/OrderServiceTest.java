@@ -121,10 +121,10 @@ public class OrderServiceTest {
 		for (Order order : orders ) {
 			
 			// Set to Ordered
-			order.setStatus(Order.Status.Ordered);
+			order.setStatus(Order.Status.Ordering);
 			response = orderService.updateOrder(loginUser, order);
 			assertTrue("Order updated.", response.getMessages().contains(new ReturnMessage("Order updated.", ReturnMessage.MessageTypeEnum.INFO)));
-			assertEquals(Order.Status.Ordered, response.getOrder().getStatus());
+			assertEquals(Order.Status.Ordering, response.getOrder().getStatus());
 			
 			// Set to Cancelled
 			order.setStatus(Order.Status.Cancelled);

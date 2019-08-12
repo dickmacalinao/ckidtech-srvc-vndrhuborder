@@ -218,7 +218,7 @@ public class OrderService {
 			} else {
 				
 				// Only status New or Ordered can add oder to list				
-				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
+				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordering) ) {
 					quotation.addMessage(msgController.createMsg("error.POUNAE"));
 				}
 			}
@@ -255,7 +255,7 @@ public class OrderService {
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
-					
+				orderRep.setStatus(Order.Status.Ordering);					
 				orderRepository.save(orderRep);				
 				quotation.setOrder(orderRep);
 				
@@ -291,7 +291,7 @@ public class OrderService {
 			} else {
 				
 				// Only status New or Ordered can remove oder from list				
-				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordered) ) {
+				if ( !orderRep.getStatus().equals(Order.Status.New) && !orderRep.getStatus().equals(Order.Status.Ordering) ) {
 					quotation.addMessage(msgController.createMsg("error.POUNAE"));
 				}
 			}
