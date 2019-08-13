@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ckidtech.quotation-service-vendorhuborder</groupId>
-  <artifactId>quotation-service-vendorhuborder</artifactId>
+  <artifactId>ckidtech-srvc-vndrhuborder</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   
   <name>quotation-service-vendorhuborder</name>
@@ -51,7 +51,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.ckidtech.quotation-service-core</groupId>
-			<artifactId>quotation-service-core</artifactId>
+			<artifactId>ckidtech-srvc-core</artifactId>
 			<version>0.0.1</version>
 		</dependency>		
 	</dependencies>
@@ -79,8 +79,8 @@
 
 	<repositories>
 		<repository>
-			<id>quotation-service-core</id>
-			<url>https://github.com/dickmacalinao/quotation-service-core/raw/mvn-repo/</url>
+			<id>ckidtech-srvc-core</id>
+			<url>https://github.com/dickmacalinao/ckidtech-srvc-core/raw/mvn-repo/</url>
 			<releases>
 				<enabled>true</enabled>
 			</releases>
