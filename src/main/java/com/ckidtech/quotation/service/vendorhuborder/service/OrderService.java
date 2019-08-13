@@ -137,6 +137,7 @@ public class OrderService {
 		orderRepository.save(order);
 		
 		quotation.setOrder(order);
+		quotation.setProcessSuccessful(true);
 		quotation.addMessage(msgController.createMsg("info.PORC"));
 			
 		
@@ -154,6 +155,7 @@ public class OrderService {
 		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
+		quotation.setProcessSuccessful(false);
 		
 		if (order.getId() == null || "".equals(order.getId()))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order ID"));
@@ -180,6 +182,7 @@ public class OrderService {
 				orderRepository.save(orderRep);
 				
 				quotation.setOrder(orderRep);
+				quotation.setProcessSuccessful(true);
 				quotation.addMessage(msgController.createMsg("info.PORU"));
 				
 			}
@@ -199,6 +202,7 @@ public class OrderService {
 		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
+		quotation.setProcessSuccessful(false);
 		
 		if (orderID == null || "".equals(orderID))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order ID"));
@@ -257,6 +261,7 @@ public class OrderService {
 				}
 				orderRep.setStatus(Order.Status.Ordering);					
 				orderRepository.save(orderRep);				
+				quotation.setProcessSuccessful(true);
 				quotation.setOrder(orderRep);
 				
 			}
@@ -276,6 +281,7 @@ public class OrderService {
 		Util.checkIfAlreadyActivated(vendorRep);
 
 		QuotationResponse quotation = new QuotationResponse();
+		quotation.setProcessSuccessful(false);
 		
 		if (orderID == null || "".equals(orderID))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order ID"));	
@@ -319,6 +325,7 @@ public class OrderService {
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()));					
 					orderRep.getOrders().remove(productId);
 					orderRepository.save(orderRep);
+					quotation.setProcessSuccessful(true);
 					quotation.addMessage(msgController.createMsg("info.PORO", prod.getName()));
 				}	
 								
@@ -330,6 +337,39 @@ public class OrderService {
 		return quotation;
 		
 	}
+	
+	public QuotationResponse getOrderById(AppUser loginUser, String orderID) throws Exception {
+		
+		QuotationResponse quotation = new QuotationResponse();
+		quotation.setProcessSuccessful(false);
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
+		
+		Order orderRep = orderRepository.findById(orderID).orElse(null);
+		quotation.setOrder(orderRep);		
+		quotation.setProcessSuccessful(true);
+		
+		return quotation;
+	}
+	
+	
+	/**
+	 * Return order object without History data
+	 * @param loginUser
+	 * @param orderID
+	 * @return
+	 * @throws Exception
+	 */
+	public QuotationResponse getOrderByIdWithOutHistory(AppUser loginUser, String orderID) throws Exception {
+		QuotationResponse quotation = getOrderById(loginUser, orderID);
+		if ( quotation.getOrder()!=null )
+			quotation.getOrder().setHistories(null);
+		return quotation;
+	}
+		
 	
 	public ChartResponse getOrderChart(AppUser loginUser, ChartRequest chartRequest) throws Exception {		
 		
@@ -356,12 +396,8 @@ public class OrderService {
 		if ( chartResponse.getMessages().isEmpty() ) {
 
 			List<String> labels = getChartLabels(chartRequest, chartResponse);
-			List<DatasetItem> datasets = new ArrayList<DatasetItem>();
-			
-			datasets.add(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels));
-			
 			chartResponse.setLabels(labels);
-			chartResponse.setDatasets(datasets);
+			chartResponse.setDataset(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels));
 			
 		}		
 		

@@ -143,5 +143,27 @@ public class QuotationControllerOrder {
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
 		return new ResponseEntity<Object>(OrderService.removeFromOrderList(loginUser, orderID, productId), HttpStatus.OK);		
 	}
+	
+	@RequestMapping(value = "/vendoruser/getorderbyid/{orderID}")
+	public ResponseEntity<Object> getOrderById(
+			@RequestHeader("authorization") String authorization,
+			@PathVariable("orderID") String orderID) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoruser/getorderbyid/" + orderID);
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
+		return new ResponseEntity<Object>(OrderService.getOrderById(loginUser, orderID), HttpStatus.OK);		
+	}
+	
+	@RequestMapping(value = "/vendoruser/getorderbyidwithouthistory/{orderID}")
+	public ResponseEntity<Object> getOrderByIdWOHistory(
+			@RequestHeader("authorization") String authorization,
+			@PathVariable("orderID") String orderID) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoruser/getorderbyid/" + orderID);
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
+		return new ResponseEntity<Object>(OrderService.getOrderByIdWithOutHistory(loginUser, orderID), HttpStatus.OK);		
+	}
 			
 }

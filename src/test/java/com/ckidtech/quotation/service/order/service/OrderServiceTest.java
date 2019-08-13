@@ -85,18 +85,20 @@ public class OrderServiceTest {
 		QuotationResponse response = orderService.createNewOrder(loginUser, new Order());
 		assertTrue("Order created.", response.getMessages().contains(new ReturnMessage("Order created.", ReturnMessage.MessageTypeEnum.INFO)));
 		
+		assertEquals(true, response.isProcessSuccessful());
 		assertNotEquals(null, response.getOrder().getId());
 		assertNotEquals(null, response.getOrder().getReferenceOrder());
-		assertNotEquals(null, response.getOrder().getOrderDate());
+		assertNotEquals(null, response.getOrder().getOrderDate());		
 		assertEquals(Order.Status.New, response.getOrder().getStatus());
 		assertEquals(true, response.getOrder().isActiveIndicator());
 		assertEquals(loginUser.getObjectRef(), response.getOrder().getVendorId());
 		
 		// Successful creation with parameter
 		LocalDateTime thisTime = LocalDateTime.now();
-		 response = orderService.createNewOrder(loginUser, new Order(thisTime, "Table1"));
+		response = orderService.createNewOrder(loginUser, new Order(thisTime, "Table1"));
 		assertTrue("Order created.", response.getMessages().contains(new ReturnMessage("Order created.", ReturnMessage.MessageTypeEnum.INFO)));
 		
+		assertEquals(true, response.isProcessSuccessful());
 		assertNotEquals(null, response.getOrder().getId());
 		assertEquals("Table1", response.getOrder().getReferenceOrder());
 		assertEquals(thisTime, response.getOrder().getOrderDate());
@@ -146,7 +148,6 @@ public class OrderServiceTest {
 			
 		}
 		
-		
 	}
 	
 
@@ -183,6 +184,34 @@ public class OrderServiceTest {
 			assertTrue("Product (Ice Tea) was removed from the order.", response.getMessages().contains(new ReturnMessage("Product (Ice Tea) was removed from the order.", ReturnMessage.MessageTypeEnum.INFO)));
 			
 		}
+		
+	}
+	
+	@Test
+	public void getOrderByIdTest() throws Exception {
+		
+		AppUser loginUser = appUserRepository.findById(TEST_USER_ID).orElse(null);
+		
+		// Successful creation without parameter		
+		QuotationResponse response = orderService.createNewOrder(loginUser, new Order());
+		assertTrue("Order created.", response.getMessages().contains(new ReturnMessage("Order created.", ReturnMessage.MessageTypeEnum.INFO)));
+		
+		String orderID = response.getOrder().getId();
+		
+		
+		// Get Order object including history
+		response = orderService.getOrderById(loginUser, orderID);
+		
+		assertEquals(true, response.isProcessSuccessful());
+		assertEquals(orderID, response.getOrder().getId());
+		assertNotEquals(null, response.getOrder().getHistories());
+				
+		// Get Order object excluding history
+		response = orderService.getOrderByIdWithOutHistory(loginUser, orderID);
+		
+		assertEquals(true, response.isProcessSuccessful());
+		assertEquals(orderID, response.getOrder().getId());
+		assertEquals(null, response.getOrder().getHistories());
 		
 	}
 	
