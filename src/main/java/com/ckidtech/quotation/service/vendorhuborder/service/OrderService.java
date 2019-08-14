@@ -80,8 +80,7 @@ public class OrderService {
 			
 			Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
 			
-			quotation.setOrders(orderRepository.findVendorOrder(loginUser.getObjectRef(), dateFrom, dateTo, pageable));
-			
+			quotation.setOrders(orderRepository.findVendorOrder(loginUser.getObjectRef(), dateFrom, dateTo, pageable));			
 			
 			if ( orderSearchCriteria.getStatus()!=null ) {
 				quotation.setOrders(orderRepository.findVendorOrderByStatus(loginUser.getObjectRef(), 
@@ -241,19 +240,20 @@ public class OrderService {
 			if ( orderRep.getOrders() == null ) {
 				orderRep.setOrders(new HashMap<String, OrderItem>());
 			} else {					
-				orderItemRep = orderRep.getOrders().get(orderItem.getProductId());
-				
+				orderItemRep = orderRep.getOrders().get(orderItem.getProductId());				
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
 				
 				// If order item is not exists, add otherwise update existing
 				if ( orderItemRep==null ) {
+					orderItem.setProductName(prod.getName());
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
 					orderRep.getOrders().put(orderItem.getProductId(), orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
+					orderItemRep.setProductName(prod.getName());
 					orderItemRep.setQuantity(orderItem.getQuantity());
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
@@ -262,8 +262,8 @@ public class OrderService {
 				orderRep.setStatus(Order.Status.Ordering);					
 				orderRepository.save(orderRep);				
 				quotation.setProcessSuccessful(true);
-				quotation.setOrder(orderRep);
-				
+				orderRep.setHistories(null);
+				quotation.setOrder(orderRep);				
 			}
 		}		
 		

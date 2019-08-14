@@ -59,7 +59,7 @@ public class OrderServiceTest {
 		orderService.deleteAllOrders();
 		
 		vendorRepository.deleteAll();
-		Vendor vendor = new Vendor("TEST_VENDOR", "Test Vendor", "Address", "9999999", "imgLink");
+		Vendor vendor = new Vendor("TEST_VENDOR", "Test Vendor", "imgLink");
 		vendor.setActiveIndicator(true);
 		vendorRepository.save(vendor);
 		
