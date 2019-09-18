@@ -493,7 +493,9 @@ public class OrderService {
 					dateFrom, dateTo, chartRequest.getStatus().toString(), pageable);
 			
 			for ( Order order : orders ) {
-				summaryData+= ( ChartRequest.ChartDataContent.ByCount.equals(chartRequest.getChartDataContent()) ? order.getTotalQuantity() : order.getTotalAmountDue() );
+				summaryData+= ( ChartRequest.ChartDataContent.ByCount.equals(chartRequest.getChartDataContent()) ? 
+						( Order.Status.New.equals(chartRequest.getStatus()) ? 1 : order.getTotalQuantity()) : 
+						order.getTotalAmountDue() );
 			}
 			data.addData(summaryData);			
 		}		

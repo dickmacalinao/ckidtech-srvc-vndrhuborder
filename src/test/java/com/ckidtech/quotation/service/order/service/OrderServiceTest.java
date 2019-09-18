@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -23,6 +24,8 @@ import com.ckidtech.quotation.service.core.dao.AppUserRepository;
 import com.ckidtech.quotation.service.core.dao.ProductRepository;
 import com.ckidtech.quotation.service.core.dao.VendorRepository;
 import com.ckidtech.quotation.service.core.model.AppUser;
+import com.ckidtech.quotation.service.core.model.ChartRequest;
+import com.ckidtech.quotation.service.core.model.ChartResponse;
 import com.ckidtech.quotation.service.core.model.Component;
 import com.ckidtech.quotation.service.core.model.Order;
 import com.ckidtech.quotation.service.core.model.OrderItem;
@@ -212,6 +215,28 @@ public class OrderServiceTest {
 		assertEquals(true, response.isProcessSuccessful());
 		assertEquals(orderID, response.getOrder().getId());
 		assertEquals(null, response.getOrder().getHistories());
+		
+	}
+	
+	@Test
+	public void getOrderCharNewtTest() throws Exception {
+		
+		AppUser loginUser = appUserRepository.findById(TEST_USER_ID).orElse(null);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		
+		createNewOrderTest();
+		
+		ChartRequest chartRequest = new ChartRequest();
+		chartRequest.setLabelBy(ChartRequest.LabelBy.Daily);
+		chartRequest.setChartDataContent(ChartRequest.ChartDataContent.ByCount);
+		chartRequest.setDateFrom(LocalDateTime.now().format(formatter));
+		chartRequest.setDateTo(LocalDateTime.now().format(formatter));
+		chartRequest.setStatus(Order.Status.New);
+		
+		ChartResponse chartResponse = orderService.getOrderChart(loginUser, chartRequest);
+		
+		assertEquals(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")), chartResponse.getLabels().get(0));
+		assertEquals(Double.valueOf("2.0"), chartResponse.getDataset().getData().get(0));
 		
 	}
 	
