@@ -78,7 +78,9 @@ public class OrderService {
 			LocalDateTime dateFrom = LocalDateTime.parse(orderSearchCriteria.getDateFrom() + " 00:00:00", formatter);
 			LocalDateTime dateTo = LocalDateTime.parse(orderSearchCriteria.getDateTo() + " 23:59:59", formatter);
 			
-			Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
+			int maxSearhResult = vendorRep.getMaxSearchResult()==0 ? Util.DEFAULT_MAX_SEARCH_RESULT : vendorRep.getMaxSearchResult();
+			
+			Pageable pageable = new PageRequest(0, maxSearhResult, Sort.Direction.ASC, "orderDate");
 			
 			quotation.setOrders(orderRepository.findVendorOrder(loginUser.getObjectRef(), dateFrom, dateTo, pageable));			
 			
@@ -103,7 +105,9 @@ public class OrderService {
 		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 		
-		Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
+		int maxSearhResult = vendorRep.getMaxSearchResult()==0 ? Util.DEFAULT_MAX_SEARCH_RESULT : vendorRep.getMaxSearchResult();
+		
+		Pageable pageable = new PageRequest(0, maxSearhResult, Sort.Direction.ASC, "orderDate");
 		return orderRepository.findUserOrder(loginUser.getObjectRef(), loginUser.getId(), dateFrom, dateTo, pageable);	
 	}
 	
@@ -394,10 +398,12 @@ public class OrderService {
 		}
 		
 		if ( chartResponse.getMessages().isEmpty() ) {
+			
+			int maxSearhResult = vendorRep.getMaxSearchResult()==0 ? Util.DEFAULT_MAX_SEARCH_RESULT : vendorRep.getMaxSearchResult();
 
 			List<String> labels = getChartLabels(chartRequest, chartResponse);
 			chartResponse.setLabels(labels);
-			chartResponse.setDataset(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels));
+			chartResponse.setDataset(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels, maxSearhResult));
 			
 		}		
 		
@@ -465,7 +471,7 @@ public class OrderService {
 		
 	}
 	
-	private DatasetItem getDataSetItem(String vendorId, ChartRequest chartRequest, List<String> labels) {
+	private DatasetItem getDataSetItem(String vendorId, ChartRequest chartRequest, List<String> labels, int maxSearhResult) {
 	
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");		
 		DatasetItem data = new DatasetItem();
@@ -488,7 +494,7 @@ public class OrderService {
 				dateTo = LocalDateTime.parse(label + " 23:59:59", formatter);
 			}
 			
-			Pageable pageable = new PageRequest(0, 100, Sort.Direction.ASC, "orderDate");
+			Pageable pageable = new PageRequest(0, maxSearhResult, Sort.Direction.ASC, "orderDate");
 			List<Order> orders = orderRepository.findVendorOrderByStatus(vendorId, 
 					dateFrom, dateTo, chartRequest.getStatus().toString(), pageable);
 			
