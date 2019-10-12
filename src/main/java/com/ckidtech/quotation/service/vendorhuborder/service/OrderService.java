@@ -252,14 +252,18 @@ public class OrderService {
 				// If order item is not exists, add otherwise update existing
 				if ( orderItemRep==null ) {
 					orderItem.setProductName(prod.getName());
+					orderItem.setBasePrice(prod.getProdComp().getBasePrice());
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
+					orderItem.setImgLocation(prod.getImgLocation());
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
 					orderRep.getOrders().put(orderItem.getProductId(), orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
 					orderItemRep.setProductName(prod.getName());
+					orderItemRep.setBasePrice(prod.getProdComp().getBasePrice());
 					orderItemRep.setQuantity(orderItem.getQuantity());
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
+					orderItemRep.setImgLocation(prod.getImgLocation());
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
