@@ -253,6 +253,7 @@ public class OrderService {
 				if ( orderItemRep==null ) {
 					orderItem.setProductName(prod.getName());
 					orderItem.setBasePrice(prod.getProdComp().getBasePrice());
+					orderItem.setFeatures(prod.getProdComp().getFeaturesStr());
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
 					orderItem.setImgLocation(prod.getImgLocation());
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
@@ -261,6 +262,7 @@ public class OrderService {
 				} else {
 					orderItemRep.setProductName(prod.getName());
 					orderItemRep.setBasePrice(prod.getProdComp().getBasePrice());
+					orderItemRep.setFeatures(prod.getProdComp().getFeaturesStr());
 					orderItemRep.setQuantity(orderItem.getQuantity());
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
 					orderItemRep.setImgLocation(prod.getImgLocation());
