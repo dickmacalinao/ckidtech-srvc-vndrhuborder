@@ -21,7 +21,6 @@ import com.ckidtech.quotation.service.core.controller.QuotationResponse;
 import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.Order;
-import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
@@ -50,6 +49,22 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(OrderService.getVendorOrder(loginUser, orderSearchCriteria), HttpStatus.OK);		
 	}
 	
+	@RequestMapping(value = "/vendoradmin/getorderfortheday/{currDate}")
+	public ResponseEntity<Object> getvendorPurchaseOrderForTheDay(
+			@RequestHeader("authorization") String authorization,
+			@PathVariable("currDate") String currDate) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoradmin/getorderfortheday/" + currDate);
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
+		
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		LocalDateTime dFrom = LocalDateTime.parse(currDate + " 00:00:00", formatter);
+		LocalDateTime dTo = LocalDateTime.parse(currDate + " 23:59:59", formatter);
+		
+		return new ResponseEntity<Object>(OrderService.getUserOrderForTheDay(loginUser, dFrom, dTo), HttpStatus.OK);		
+	}
+	
 	@RequestMapping(value = "/vendoradmin/getorderchart")
 	public ResponseEntity<Object> geOrderChart(
 			@RequestHeader("authorization") String authorization,
@@ -59,6 +74,17 @@ public class QuotationControllerOrder {
 		AppUser loginUser = new AppUser(authorization);
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
 		return new ResponseEntity<Object>(OrderService.getOrderChart(loginUser, chartReq), HttpStatus.OK);		
+	}
+	
+	@RequestMapping(value = "/vendoradmin/updateorder", method = RequestMethod.POST)
+	public ResponseEntity<Object> vendorUpdateOrder(
+			@RequestHeader("authorization") String authorization,
+			@RequestBody Order order) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoradmin/updateorder");
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, order.getVendorId());
+		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
 	// For testing purposes
@@ -120,16 +146,17 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}", method = RequestMethod.POST)
+	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}/{productID}/{quantity}")
 	public ResponseEntity<Object> addToOrderList(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("orderID") String orderID, 
-			@RequestBody OrderItem orderItem) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /vendoruser/addtoorderitem/" + orderID);
+			@PathVariable("productID") String productID,
+			@PathVariable("quantity") int quantity) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoruser/addtoorderitem/" + orderID + "/" + productID + "/" + quantity);
 		
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
-		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, orderItem), HttpStatus.OK);		
+		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, productID, quantity), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/vendoruser/removefromorderlist/{orderID}/{productId}")

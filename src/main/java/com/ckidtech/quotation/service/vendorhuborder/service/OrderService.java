@@ -22,7 +22,6 @@ import com.ckidtech.quotation.service.core.controller.QuotationResponse;
 import com.ckidtech.quotation.service.core.dao.OrderRepository;
 import com.ckidtech.quotation.service.core.dao.ProductRepository;
 import com.ckidtech.quotation.service.core.dao.VendorRepository;
-import com.ckidtech.quotation.service.core.exception.ServiceAccessResourceFailureException;
 import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.ChartResponse;
@@ -32,6 +31,7 @@ import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.Vendor;
+import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
 
 @ComponentScan({"com.ckidtech.quotation.service.core.controller"})
@@ -108,7 +108,11 @@ public class OrderService {
 		int maxSearhResult = vendorRep.getMaxSearchResult()==0 ? Util.DEFAULT_MAX_SEARCH_RESULT : vendorRep.getMaxSearchResult();
 		
 		Pageable pageable = new PageRequest(0, maxSearhResult, Sort.Direction.ASC, "orderDate");
-		return orderRepository.findUserOrder(loginUser.getObjectRef(), loginUser.getId(), dateFrom, dateTo, pageable);	
+		if ( UserRole.VENDOR_ADMIN.equals(loginUser.getRole()) ) {
+			return orderRepository.findVendorOrder(loginUser.getObjectRef(), dateFrom, dateTo, pageable);	
+		} else {		
+			return orderRepository.findUserOrder(loginUser.getObjectRef(), loginUser.getId(), dateFrom, dateTo, pageable);	
+		}
 	}
 	
 	public QuotationResponse createNewOrder(AppUser loginUser, Order order) throws Exception {
@@ -142,7 +146,6 @@ public class OrderService {
 		quotation.setOrder(order);
 		quotation.setProcessSuccessful(true);
 		quotation.addMessage(msgController.createMsg("info.PORC"));
-			
 		
 		return quotation;
 		
@@ -179,7 +182,9 @@ public class OrderService {
 				order.setUserId(loginUser.getId());
 					
 				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order));		
-				orderRep.setUserId(loginUser.getId());
+				if ( UserRole.VENDOR_USER.equals(loginUser.getRole()) ) {
+					orderRep.setUserId(loginUser.getId());
+				}
 				orderRep.setStatus(order.getStatus());
 				orderRep.setOrderDate(order.getOrderDate());					
 				orderRepository.save(orderRep);
@@ -195,7 +200,7 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse addOrderItem(AppUser loginUser, String orderID, OrderItem orderItem) throws Exception {
+	public QuotationResponse addOrderItem(AppUser loginUser, String orderID, String productID, int quantity) throws Exception {
 		
 		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
 		
@@ -209,12 +214,9 @@ public class OrderService {
 		
 		if (orderID == null || "".equals(orderID))
 			quotation.addMessage(msgController.createMsg("error.MFE", "Order ID"));
-		if (orderItem == null) {
-			quotation.addMessage(msgController.createMsg("error.MFE", "Order Item"));
-		} else {
-			if ( orderItem.getProductId()==null || "".equals(orderItem.getProductId()) ) 
-				quotation.addMessage(msgController.createMsg("error.MFE", "Product ID"));			
-		}
+		if (productID == null || "".equals(productID)) {
+			quotation.addMessage(msgController.createMsg("error.MFE", "Product ID"));
+		} 
 		
 		if (quotation.getMessages().isEmpty()) {			
 			
@@ -230,7 +232,7 @@ public class OrderService {
 				}
 			}
 			
-			Product prod = productRepository.findById(orderItem.getProductId()).orElse(null);
+			Product prod = productRepository.findById(productID).orElse(null);
 			// Verify if Product exists and active
 			if  ( prod==null || !prod.isActiveIndicator() ) {
 				quotation.addMessage(msgController.createMsg("error.VPNFE"));
@@ -244,28 +246,25 @@ public class OrderService {
 			if ( orderRep.getOrders() == null ) {
 				orderRep.setOrders(new HashMap<String, OrderItem>());
 			} else {					
-				orderItemRep = orderRep.getOrders().get(orderItem.getProductId());				
+				orderItemRep = orderRep.getOrders().get(productID);				
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
+								
+				//Clear product history first before adding to order item
+				prod.setHistories(null);
 				
 				// If order item is not exists, add otherwise update existing
-				if ( orderItemRep==null ) {
-					orderItem.setProductName(prod.getName());
-					orderItem.setBasePrice(prod.getProdComp().getBasePrice());
-					orderItem.setFeatures(prod.getProdComp().getFeaturesStr());
-					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity());	// Compute the Amount Due
-					orderItem.setImgLocation(prod.getImgLocation());
+				if ( orderItemRep==null ) {	
+					OrderItem orderItem = new OrderItem(prod, quantity);
+					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * quantity);	// Compute the Amount Due					
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
-					orderRep.getOrders().put(orderItem.getProductId(), orderItem);
+					orderRep.getOrders().put(productID, orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
-					orderItemRep.setProductName(prod.getName());
-					orderItemRep.setBasePrice(prod.getProdComp().getBasePrice());
-					orderItemRep.setFeatures(prod.getProdComp().getFeaturesStr());
-					orderItemRep.setQuantity(orderItem.getQuantity());
-					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * orderItem.getQuantity()); // Compute the Amount Due
-					orderItemRep.setImgLocation(prod.getImgLocation());
+					orderItemRep.setProduct(prod);
+					orderItemRep.setQuantity(quantity);
+					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * quantity); // Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
@@ -408,8 +407,13 @@ public class OrderService {
 			int maxSearhResult = vendorRep.getMaxSearchResult()==0 ? Util.DEFAULT_MAX_SEARCH_RESULT : vendorRep.getMaxSearchResult();
 
 			List<String> labels = getChartLabels(chartRequest, chartResponse);
-			chartResponse.setLabels(labels);
-			chartResponse.setDataset(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels, maxSearhResult));
+			
+			if ( labels.size() > 12) {
+				chartResponse.addMessage(msgController.createMsg("error.POLMTL", 12, labels.size()));
+			} else {
+				chartResponse.setLabels(labels);
+				chartResponse.setDataset(getDataSetItem(loginUser.getObjectRef(), chartRequest, labels, maxSearhResult));
+			}			
 			
 		}		
 		
