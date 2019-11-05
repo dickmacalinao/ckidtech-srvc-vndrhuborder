@@ -146,7 +146,7 @@ public class OrderService {
 		order.setUserId(loginUser.getId());
 		order.setStatus(Order.Status.New);		
 		order.setActiveIndicator(true);
-		Util.initalizeCreatedInfo(order, loginUser.getId(), msgController.getMsg("info.PORC"), ZoneId.of(env.getProperty("constant.zoneId")));	
+		Util.initalizeCreatedInfo(order, loginUser.getId(), msgController.getMsg("info.PORC"));	
 		orderRepository.save(order);
 		
 		quotation.setOrder(order);
@@ -187,7 +187,7 @@ public class OrderService {
 				
 				order.setUserId(loginUser.getId());
 					
-				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order), ZoneId.of(env.getProperty("constant.zoneId")));		
+				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order));		
 				if ( UserRole.VENDOR_USER.equals(loginUser.getRole()) ) {
 					orderRep.setUserId(loginUser.getId());
 				}
@@ -264,14 +264,14 @@ public class OrderService {
 				if ( orderItemRep==null ) {	
 					OrderItem orderItem = new OrderItem(prod, quantity);
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * quantity);	// Compute the Amount Due					
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()), ZoneId.of(env.getProperty("constant.zoneId")));
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
 					orderRep.getOrders().put(productID, orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
 					orderItemRep.setProduct(prod);
 					orderItemRep.setQuantity(quantity);
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * quantity); // Compute the Amount Due
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()), ZoneId.of(env.getProperty("constant.zoneId")));
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
 				orderRep.setStatus(Order.Status.Ordering);					
@@ -337,7 +337,7 @@ public class OrderService {
 				if ( orderItemRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()), ZoneId.of(env.getProperty("constant.zoneId")));					
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()));					
 					orderRep.getOrders().remove(productId);
 					orderRepository.save(orderRep);
 					quotation.setProcessSuccessful(true);
