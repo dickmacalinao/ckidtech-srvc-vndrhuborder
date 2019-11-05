@@ -1,6 +1,7 @@
 package com.ckidtech.quotation.service.vendorhuborder.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -53,6 +55,9 @@ public class OrderService {
 	
 	@Autowired
 	private MessageController msgController;
+	
+	@Autowired
+	private Environment env;	
 
 	private static final Logger LOG = Logger.getLogger(OrderService.class.getName());
 	
@@ -128,10 +133,9 @@ public class OrderService {
 		
 		// Set Order Date if not specified
 		if ( order.getOrderDate()== null ) {
-			order.setOrderDate(LocalDateTime.now());
+			LOG.log(Level.INFO, "*****************************" + env.getProperty("constant.zoneId"));
+			order.setOrderDate(LocalDateTime.now(ZoneId.of(env.getProperty("constant.zoneId"))));
 		}	
-		
-		LOG.log(Level.INFO, "*****************************" + LocalDateTime.now());
 		
 		// Set Reference Order if not specified
 		if ( order.getReferenceOrder()==null || "".equals(order.getReferenceOrder())) {
@@ -142,7 +146,7 @@ public class OrderService {
 		order.setUserId(loginUser.getId());
 		order.setStatus(Order.Status.New);		
 		order.setActiveIndicator(true);
-		Util.initalizeCreatedInfo(order, loginUser.getId(), msgController.getMsg("info.PORC"));	
+		Util.initalizeCreatedInfo(order, loginUser.getId(), msgController.getMsg("info.PORC"), ZoneId.of(env.getProperty("constant.zoneId")));	
 		orderRepository.save(order);
 		
 		quotation.setOrder(order);
@@ -183,7 +187,7 @@ public class OrderService {
 				
 				order.setUserId(loginUser.getId());
 					
-				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order));		
+				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order), ZoneId.of(env.getProperty("constant.zoneId")));		
 				if ( UserRole.VENDOR_USER.equals(loginUser.getRole()) ) {
 					orderRep.setUserId(loginUser.getId());
 				}
@@ -260,14 +264,14 @@ public class OrderService {
 				if ( orderItemRep==null ) {	
 					OrderItem orderItem = new OrderItem(prod, quantity);
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * quantity);	// Compute the Amount Due					
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()), ZoneId.of(env.getProperty("constant.zoneId")));
 					orderRep.getOrders().put(productID, orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
 					orderItemRep.setProduct(prod);
 					orderItemRep.setQuantity(quantity);
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * quantity); // Compute the Amount Due
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()), ZoneId.of(env.getProperty("constant.zoneId")));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
 				orderRep.setStatus(Order.Status.Ordering);					
@@ -333,7 +337,7 @@ public class OrderService {
 				if ( orderItemRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()));					
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()), ZoneId.of(env.getProperty("constant.zoneId")));					
 					orderRep.getOrders().remove(productId);
 					orderRepository.save(orderRep);
 					quotation.setProcessSuccessful(true);
