@@ -131,6 +131,8 @@ public class OrderService {
 			order.setOrderDate(LocalDateTime.now());
 		}	
 		
+		LOG.log(Level.INFO, "*****************************" + LocalDateTime.now());
+		
 		// Set Reference Order if not specified
 		if ( order.getReferenceOrder()==null || "".equals(order.getReferenceOrder())) {
 			order.setReferenceOrder("#" + sequenceService.getNextSequence(loginUser.getObjectRef()));			
