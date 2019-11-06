@@ -5,7 +5,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -250,9 +249,14 @@ public class OrderService {
 			
 			// Retrieve the order item from previous and if exists, otherwise initialize
 			if ( orderRep.getOrders() == null ) {
-				orderRep.setOrders(new HashMap<String, OrderItem>());
+				orderRep.setOrders(new ArrayList<OrderItem>());
 			} else {					
-				orderItemRep = orderRep.getOrders().get(productID);				
+				for (OrderItem item : orderRep.getOrders() ) {
+					if ( productID.equalsIgnoreCase(item.getProduct().getId()) ) {
+						orderItemRep = item;	
+						break;
+					}					
+				}						
 			}
 			
 			if (quotation.getMessages().isEmpty()) { 
@@ -265,10 +269,10 @@ public class OrderService {
 					OrderItem orderItem = new OrderItem(prod, quantity);
 					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * quantity);	// Compute the Amount Due					
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
-					orderRep.getOrders().put(productID, orderItem);
+					orderRep.getOrders().add(orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
-					orderItemRep.setProduct(prod);
+					//orderItemRep.setProduct(prod);
 					orderItemRep.setQuantity(quantity);
 					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * quantity); // Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
@@ -327,18 +331,18 @@ public class OrderService {
 				
 				OrderItem orderItemRep = null;
 				
-				// Retrieve the order from previous and if exists
-				if ( orderRep.getOrders() == null ) {
-					orderRep.setOrders(new HashMap<String, OrderItem>());
-				} else {
-					orderItemRep = orderRep.getOrders().get(productId);	
-				}
+				for (OrderItem item : orderRep.getOrders() ) {
+					if ( productId.equalsIgnoreCase(item.getProduct().getId()) ) {
+						orderItemRep = item;	
+						break;
+					}					
+				}	
 								
 				if ( orderItemRep==null ) {
 					quotation.addMessage(msgController.createMsg("error.POINFE"));
 				} else {
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.PORO"), prod.getName()));					
-					orderRep.getOrders().remove(productId);
+					orderRep.getOrders().remove(orderItemRep);
 					orderRepository.save(orderRep);
 					quotation.setProcessSuccessful(true);
 					quotation.addMessage(msgController.createMsg("info.PORO", prod.getName()));
