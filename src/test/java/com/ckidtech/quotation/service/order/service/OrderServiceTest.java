@@ -28,6 +28,7 @@ import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.ChartResponse;
 import com.ckidtech.quotation.service.core.model.Component;
 import com.ckidtech.quotation.service.core.model.Order;
+import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.Product;
 import com.ckidtech.quotation.service.core.model.ReturnMessage;
 import com.ckidtech.quotation.service.core.model.Vendor;
@@ -168,16 +169,16 @@ public class OrderServiceTest {
 		for (Order order : orders ) {
 			
 			//Product not found.
-			response = orderService.addOrderItem(loginUser, order.getId(), "TEST_PRODUCTXX", 1);
+			response = orderService.addOrderItem(loginUser, order.getId(), "TEST_PRODUCTXX", new OrderItem(null, 1, false, null) );
 			assertTrue("Product not found.", response.getMessages().contains(new ReturnMessage("Product not found.", ReturnMessage.MessageTypeEnum.ERROR)));
 			
 			// Successful adding product in the order
-			response = orderService.addOrderItem(loginUser, order.getId(), "TEST_PRODUCT", 1);
+			response = orderService.addOrderItem(loginUser, order.getId(), "TEST_PRODUCT", new OrderItem(null, 1, false, null));
 			assertTrue("Product (Ice Tea) added in the order.", response.getMessages().contains(new ReturnMessage("Product (Ice Tea) added in the order.", ReturnMessage.MessageTypeEnum.INFO)));
 			assertEquals(100, response.getOrder().getTotalAmountDue(), 0.01);
 			
 			// Update the quantity
-			response = orderService.addOrderItem(loginUser, order.getId(), "TEST_PRODUCT", 2);
+			response = orderService.addOrderItem(loginUser, order.getId(), "TEST_PRODUCT", new OrderItem(null, 2, false, null));
 			assertTrue("Product (Ice Tea) was updated from the order.", response.getMessages().contains(new ReturnMessage("Product (Ice Tea) was updated from the order.", ReturnMessage.MessageTypeEnum.INFO)));
 			assertEquals(200, response.getOrder().getTotalAmountDue(), 0.01);
 			

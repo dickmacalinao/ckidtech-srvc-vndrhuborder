@@ -205,7 +205,7 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse addOrderItem(AppUser loginUser, String orderID, String productID, int quantity) throws Exception {
+	public QuotationResponse addOrderItem(AppUser loginUser, String orderID, String productID, OrderItem oItem) throws Exception {
 		
 		LOG.log(Level.INFO, "Calling Order Service addToOrderList()");
 		
@@ -264,17 +264,22 @@ public class OrderService {
 				//Clear product history first before adding to order item
 				prod.setHistories(null);
 				
+				int quantity = 1;
+				boolean free = false;
+				if ( oItem!=null ) {
+					quantity = oItem.getQuantity();					
+					free = oItem.isFree();					
+				}
+				
 				// If order item is not exists, add otherwise update existing
 				if ( orderItemRep==null ) {	
-					OrderItem orderItem = new OrderItem(prod, quantity);
-					orderItem.setAmountDue(prod.getProdComp().getComputedAmount() * quantity);	// Compute the Amount Due					
+					OrderItem orderItem = new OrderItem(prod, quantity, free, null);			
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
 					orderRep.getOrders().add(orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
 					//orderItemRep.setProduct(prod);
 					orderItemRep.setQuantity(quantity);
-					orderItemRep.setAmountDue(prod.getProdComp().getComputedAmount() * quantity); // Compute the Amount Due
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}

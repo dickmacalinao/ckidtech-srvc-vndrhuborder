@@ -21,6 +21,7 @@ import com.ckidtech.quotation.service.core.controller.QuotationResponse;
 import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.Order;
+import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
@@ -146,17 +147,17 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}/{productID}/{quantity}")
+	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}/{productID}}")
 	public ResponseEntity<Object> addToOrderList(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("orderID") String orderID, 
 			@PathVariable("productID") String productID,
-			@PathVariable("quantity") int quantity) throws Exception {		
-		LOG.log(Level.INFO, "Calling API /vendoruser/addtoorderitem/" + orderID + "/" + productID + "/" + quantity);
+			@RequestBody OrderItem oItem) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoruser/addtoorderitem/" + orderID + "/" + productID + "/" + oItem);
 		
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_USER, null);
-		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, productID, quantity), HttpStatus.OK);		
+		return new ResponseEntity<Object>(OrderService.addOrderItem(loginUser, orderID, productID, oItem), HttpStatus.OK);		
 	}
 	
 	@RequestMapping(value = "/vendoruser/removefromorderlist/{orderID}/{productId}")
