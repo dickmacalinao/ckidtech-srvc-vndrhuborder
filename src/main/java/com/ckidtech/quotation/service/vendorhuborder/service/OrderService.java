@@ -278,8 +278,8 @@ public class OrderService {
 					orderRep.getOrders().add(orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
-					//orderItemRep.setProduct(prod);
 					orderItemRep.setQuantity(quantity);
+					orderItemRep.setFree(free);
 					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}

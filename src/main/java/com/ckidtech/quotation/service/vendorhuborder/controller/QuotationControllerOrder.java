@@ -147,7 +147,7 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(OrderService.updateOrder(loginUser, order), HttpStatus.OK);		
 	}
 	
-	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}/{productID}}")
+	@RequestMapping(value = "/vendoruser/addtoorderitem/{orderID}/{productID}")
 	public ResponseEntity<Object> addToOrderList(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("orderID") String orderID, 
