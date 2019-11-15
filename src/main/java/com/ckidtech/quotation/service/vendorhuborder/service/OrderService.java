@@ -31,6 +31,7 @@ import com.ckidtech.quotation.service.core.model.Order;
 import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.model.Product;
+import com.ckidtech.quotation.service.core.model.ReferenceData;
 import com.ckidtech.quotation.service.core.model.Vendor;
 import com.ckidtech.quotation.service.core.security.UserRole;
 import com.ckidtech.quotation.service.core.utils.Util;
@@ -182,14 +183,18 @@ public class OrderService {
 				quotation.addMessage(msgController.createMsg("error.PONFE"));
 			}
 			
+			if ( orderRep.getOrders().size()>0 && Order.Status.New == order.getStatus() ) {
+				quotation.addMessage(msgController.createMsg("error.POCCTN"));
+			}			
+			
+			if ( orderRep.getOrders().size()==0 && (Order.Status.Paid == order.getStatus() || Order.Status.Refund == order.getStatus()) ) {
+				quotation.addMessage(msgController.createMsg("error.POCCTPR"));
+			}	
+			
 			if (quotation.getMessages().isEmpty()) { 
-				
-				order.setUserId(loginUser.getId());
-					
+									
 				Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), orderRep.getDifferences(order));		
-				if ( UserRole.VENDOR_USER.equals(loginUser.getRole()) ) {
-					orderRep.setUserId(loginUser.getId());
-				}
+				orderRep.setUserId(order.getUserId());
 				orderRep.setStatus(order.getStatus());
 				orderRep.setOrderDate(order.getOrderDate());					
 				orderRepository.save(orderRep);
@@ -266,21 +271,24 @@ public class OrderService {
 				
 				int quantity = 1;
 				boolean free = false;
+				ReferenceData discountRef = null;
 				if ( oItem!=null ) {
 					quantity = oItem.getQuantity();					
-					free = oItem.isFree();					
+					free = oItem.isFree();
+					discountRef = oItem.getDiscountRef();
 				}
 				
 				// If order item is not exists, add otherwise update existing
 				if ( orderItemRep==null ) {	
-					OrderItem orderItem = new OrderItem(prod, quantity, free, null);			
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), orderItem.toString()));
+					OrderItem orderItem = new OrderItem(prod, quantity, free, discountRef);			
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POAO"), prod.getName()));
 					orderRep.getOrders().add(orderItem);
 					quotation.addMessage(msgController.createMsg("info.POAO", prod.getName()));
 				} else {
 					orderItemRep.setQuantity(quantity);
 					orderItemRep.setFree(free);
-					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), orderRep.toString()));
+					orderItemRep.setDiscountRef(discountRef);
+					Util.initalizeUpdatedInfo(orderRep, loginUser.getId(), String.format(msgController.getMsg("info.POUO"), prod.getName()));
 					quotation.addMessage(msgController.createMsg("info.POUO", prod.getName()));
 				}
 				orderRep.setStatus(Order.Status.Ordering);					
@@ -362,21 +370,21 @@ public class OrderService {
 		
 	}
 	
-	public QuotationResponse getOrderById(AppUser loginUser, String orderID) throws Exception {
+	public Order getOrderById(AppUser loginUser, String orderID) throws Exception {
 		
-		QuotationResponse quotation = new QuotationResponse();
-		quotation.setProcessSuccessful(false);
+		//QuotationResponse quotation = new QuotationResponse();
+		//quotation.setProcessSuccessful(false);
 		
 		Util.checkIfAlreadyActivated(loginUser);
 		
 		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
 		Util.checkIfAlreadyActivated(vendorRep);
 		
-		Order orderRep = orderRepository.findById(orderID).orElse(null);
-		quotation.setOrder(orderRep);		
-		quotation.setProcessSuccessful(true);
+		//Order orderRep = orderRepository.findById(orderID).orElse(null);
+		//quotation.setOrder(orderRep);		
+		//quotation.setProcessSuccessful(true);
 		
-		return quotation;
+		return orderRepository.findById(orderID).orElse(null);
 	}
 	
 	
@@ -388,7 +396,8 @@ public class OrderService {
 	 * @throws Exception
 	 */
 	public QuotationResponse getOrderByIdWithOutHistory(AppUser loginUser, String orderID) throws Exception {
-		QuotationResponse quotation = getOrderById(loginUser, orderID);
+		QuotationResponse quotation = new QuotationResponse();
+		quotation.setOrder(getOrderById(loginUser, orderID));
 		if ( quotation.getOrder()!=null )
 			quotation.getOrder().setHistories(null);
 		return quotation;

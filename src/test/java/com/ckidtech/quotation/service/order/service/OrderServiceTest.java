@@ -140,14 +140,14 @@ public class OrderServiceTest {
 			// Set to Paid
 			order.setStatus(Order.Status.Paid);
 			response = orderService.updateOrder(loginUser, order);
-			assertTrue("Order updated.", response.getMessages().contains(new ReturnMessage("Order updated.", ReturnMessage.MessageTypeEnum.INFO)));
-			assertEquals(Order.Status.Paid, response.getOrder().getStatus());
+			assertTrue("Cannot change the status to Paid or Refund if there are no items in the list.", response.getMessages().contains(new ReturnMessage("Cannot change the status to Paid or Refund if there are no items in the list.", ReturnMessage.MessageTypeEnum.ERROR)));
+			//assertEquals(Order.Status.Paid, response.getOrder().getStatus());
 			
 			// Set to Refund
 			order.setStatus(Order.Status.Refund);
 			response = orderService.updateOrder(loginUser, order);
-			assertTrue("Order updated.", response.getMessages().contains(new ReturnMessage("Order updated.", ReturnMessage.MessageTypeEnum.INFO)));		
-			assertEquals(Order.Status.Refund, response.getOrder().getStatus());
+			assertTrue("Cannot change the status to Paid or Refund if there are no items in the list.", response.getMessages().contains(new ReturnMessage("Cannot change the status to Paid or Refund if there are no items in the list.", ReturnMessage.MessageTypeEnum.ERROR)));		
+			//assertEquals(Order.Status.Refund, response.getOrder().getStatus());
 			
 		}
 		
@@ -203,16 +203,12 @@ public class OrderServiceTest {
 		
 		
 		// Get Order object including history
-		response = orderService.getOrderById(loginUser, orderID);
-		
-		assertEquals(true, response.isProcessSuccessful());
-		assertEquals(orderID, response.getOrder().getId());
-		assertNotEquals(null, response.getOrder().getHistories());
+		Order order = orderService.getOrderById(loginUser, orderID);
+		assertEquals(orderID, order.getId());
+		assertNotEquals(null, order.getHistories());
 				
 		// Get Order object excluding history
 		response = orderService.getOrderByIdWithOutHistory(loginUser, orderID);
-		
-		assertEquals(true, response.isProcessSuccessful());
 		assertEquals(orderID, response.getOrder().getId());
 		assertEquals(null, response.getOrder().getHistories());
 		

@@ -105,6 +105,17 @@ public class QuotationControllerOrder {
 		return new ResponseEntity<Object>(quotations, HttpStatus.CREATED);		
 	}
 	
+	@RequestMapping(value = "/vendoradmin/getorderbyid/{orderID}")
+	public ResponseEntity<Object> getVendorAdminOrderById(
+			@RequestHeader("authorization") String authorization,
+			@PathVariable("orderID") String orderID) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoradmin/getorderbyid/" + orderID);
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
+		return new ResponseEntity<Object>(OrderService.getOrderById(loginUser, orderID), HttpStatus.OK);		
+	}	
+	
 	
 	// By Users
 
@@ -173,7 +184,7 @@ public class QuotationControllerOrder {
 	}
 	
 	@RequestMapping(value = "/vendoruser/getorderbyid/{orderID}")
-	public ResponseEntity<Object> getOrderById(
+	public ResponseEntity<Object> getVendorUserOrderById(
 			@RequestHeader("authorization") String authorization,
 			@PathVariable("orderID") String orderID) throws Exception {		
 		LOG.log(Level.INFO, "Calling API /vendoruser/getorderbyid/" + orderID);
