@@ -21,6 +21,7 @@ import com.ckidtech.quotation.service.core.controller.QuotationResponse;
 import com.ckidtech.quotation.service.core.model.AppUser;
 import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.Order;
+import com.ckidtech.quotation.service.core.model.OrderFilter;
 import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.security.UserRole;
@@ -114,6 +115,18 @@ public class QuotationControllerOrder {
 		AppUser loginUser = new AppUser(authorization);	
 		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);
 		return new ResponseEntity<Object>(OrderService.getOrderById(loginUser, orderID), HttpStatus.OK);		
+	}	
+	
+	@RequestMapping(value = "/vendoradmin/searchorder")
+	public ResponseEntity<Object> vendorAdminSearchOrder(
+			@RequestHeader("authorization") String authorization,
+			@RequestBody OrderFilter orderFilter) throws Exception {		
+		LOG.log(Level.INFO, "Calling API /vendoradmin/searchorder");
+		
+		AppUser loginUser = new AppUser(authorization);	
+		Util.checkAccessGrant(loginUser, UserRole.VENDOR_ADMIN, null);		
+		
+		return new ResponseEntity<Object>(OrderService.searchOrder(loginUser, orderFilter), HttpStatus.OK);		
 	}	
 	
 	

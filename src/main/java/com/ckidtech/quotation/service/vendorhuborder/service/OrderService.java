@@ -28,6 +28,7 @@ import com.ckidtech.quotation.service.core.model.ChartRequest;
 import com.ckidtech.quotation.service.core.model.ChartResponse;
 import com.ckidtech.quotation.service.core.model.DatasetItem;
 import com.ckidtech.quotation.service.core.model.Order;
+import com.ckidtech.quotation.service.core.model.OrderFilter;
 import com.ckidtech.quotation.service.core.model.OrderItem;
 import com.ckidtech.quotation.service.core.model.OrderSearchCriteria;
 import com.ckidtech.quotation.service.core.model.Product;
@@ -118,6 +119,43 @@ public class OrderService {
 		} else {		
 			return orderRepository.findUserOrder(loginUser.getObjectRef(), loginUser.getId(), dateFrom, dateTo, pageable);	
 		}
+	}
+	
+	public List<Order> searchOrder(AppUser loginUser, OrderFilter orderFilter) {
+		
+		Util.checkIfAlreadyActivated(loginUser);
+		
+		Vendor vendorRep = vendorRepository.findById(loginUser.getObjectRef()).orElse(null);	
+		Util.checkIfAlreadyActivated(vendorRep);
+		
+		int maxSearhResult = vendorRep.getMaxSearchResult()==0 ? Util.DEFAULT_MAX_SEARCH_RESULT : vendorRep.getMaxSearchResult();
+		
+		Pageable pageable = new PageRequest(0, maxSearhResult, Sort.Direction.ASC, "orderDate");
+		
+		List<Order> order = new ArrayList<Order>();
+		
+		System.out.println("orderFilter=" + orderFilter);
+		
+		if ( orderFilter!=null && orderFilter.getDateFrom()!=null && orderFilter.getDateTo()!=null) {
+			
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+			LocalDateTime dFrom = LocalDateTime.parse(orderFilter.getDateFrom() + " 00:00:00", formatter);
+			LocalDateTime dTo = LocalDateTime.parse(orderFilter.getDateTo() + " 23:59:59", formatter);			
+			String status = (orderFilter.getStatus()==null ? "" : orderFilter.getStatus());
+			String userId = (orderFilter.getUserId()==null ? "" : orderFilter.getUserId());
+		
+			if ( !"".equals(status) && !"".equals(userId) ) {
+				return orderRepository.findVendorOrderByStatusAndUser(loginUser.getObjectRef(), dFrom, dTo, status, userId, pageable);
+			} else if ( !"".equals(status) ) {
+				return orderRepository.findVendorOrderByStatus(loginUser.getObjectRef(), dFrom, dTo, status, pageable);	
+			} else if ( !"".equals(userId) ) {
+				return orderRepository.findVendorOrderByUser(loginUser.getObjectRef(), dFrom, dTo, userId, pageable);	
+			} else {
+				return orderRepository.findVendorOrder(loginUser.getObjectRef(), dFrom, dTo, pageable);	
+			}	
+			
+		}
+		return order;
 	}
 	
 	public QuotationResponse createNewOrder(AppUser loginUser, Order order) throws Exception {
